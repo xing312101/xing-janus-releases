@@ -1,0 +1,300 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Xing Janus 設定檔（~/.xing-janus/config.json）",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": {
+      "description": "設定檔格式的版本。格式改了，新版會自動轉換舊的設定檔",
+      "type": "integer",
+      "enum": [1]
+    },
+    "defaultModel": {
+      "description": "預設的廠商和模型，例如 anthropic:claude-opus-5-5。寫系列名稱（anthropic:opus）就自動用該系列最新、還在服務中的模型",
+      "type": "string",
+      "pattern": "^[a-z0-9-]+:[A-Za-z0-9._:/-]+$"
+    },
+    "effort": {
+      "description": "每個模型的預設 effort。鍵是模型 ID、系列名稱或 default",
+      "type": "object",
+      "additionalProperties": { "type": "string", "enum": ["low", "medium", "high", "xhigh", "max"] }
+    },
+    "defaultMode": {
+      "description": "預設模式：normal（一般）、auto-edit（自動改檔）、full-auto（全自動：改檔和沙盒裡的指令都不問，要信任的資料夾、沙盒開著）、plan（計劃）、read-only（唯讀）",
+      "type": "string",
+      "enum": ["normal", "auto-edit", "full-auto", "plan", "read-only"]
+    },
+    "language": {
+      "description": "回覆的語言",
+      "type": "string",
+      "minLength": 1
+    },
+    "uiLanguage": {
+      "description": "介面的語言：zh-TW（繁體中文）或 en（English）。沒寫就照系統的語言，第一次啟動時問一次；/language ui 切換時會寫進來",
+      "enum": ["zh-TW", "en"]
+    },
+    "notify": {
+      "description": "一輪跑完、或要問你的時候，終端機響一聲",
+      "type": "boolean"
+    },
+    "screen": {
+      "description": "畫面：fullscreen 是全螢幕模式（預設；替代畫面，寬的視窗右邊放待辦清單和目前的狀態，PageUp／PageDown 和滾輪捲動）；classic 是一般模式（終端機自己捲動、搜尋、選取複製）。全螢幕開不了的時候自動用一般模式。/tui 切換時會寫進來",
+      "enum": ["fullscreen", "classic"]
+    },
+    "enterToApprove": {
+      "description": "詢問時按 Enter 就是「是」（網域的詢問是「允許一次」）。危險的指令、還沒看完的內容、永久允許的確認照樣要按 y；詢問剛出現的 0.5 秒內的 Enter 不算。預設 true（跟 Claude Code 一樣）；false 是一律要按 y",
+      "type": "boolean"
+    },
+    "statusBar": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fields": {
+          "description": "狀態列要顯示哪些欄位，照重要程度排；視窗太窄時從最後面開始省略。模型一定會顯示",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["model", "effort", "mode", "sandbox", "context", "day-cost", "session-cost", "month-cost", "todo", "progress"]
+          }
+        }
+      }
+    },
+    "budget": {
+      "description": "預算上限（美元）。到 80% 提醒，到 100% 停下來問你",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "perTurnUsd": { "type": "number", "minimum": 0 },
+        "perDayUsd": { "type": "number", "minimum": 0 },
+        "perMonthUsd": { "type": "number", "minimum": 0 },
+        "cycleStartDay": {
+          "description": "帳單週期從每月幾號開始（算本月花費用）",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 28
+        }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "toolCallsPerTurn": { "description": "每輪最多幾次工具呼叫，碰到就停下來問你", "type": "integer", "minimum": 1 },
+        "maxOutputTokens": { "description": "每次請求的輸出上限，不超過模型的上限", "type": "integer", "minimum": 1024 }
+      }
+    },
+    "subagents": {
+      "description": "子代理（模型交給另一個 agent 做一件事）：同時幾個、每個的上限、用哪個模型。不想讓某個模型用，在 capabilities 寫 \"subagents\": false",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "maxConcurrent": { "description": "同時跑幾個（只有找東西的 explore 會同時跑），預設 4", "type": "integer", "minimum": 1, "maximum": 16 },
+        "maxToolCalls": { "description": "每個子代理最多幾個工具呼叫，到了就叫它交報告，預設 30", "type": "integer", "minimum": 1 },
+        "timeoutMinutes": { "description": "每個子代理最多跑幾分鐘，到了就叫它交報告，預設 10", "type": "number", "minimum": 1 },
+        "model": { "description": "子代理預設用的模型（寫法跟 /model 一樣，例如 anthropic:haiku）；沒寫就跟主對話同一個", "type": "string", "minLength": 1 }
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allow": {
+          "description": "加進白名單的指令（指令加子指令的開頭），例如 \"make test\"",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "allowRemove": {
+          "description": "從預設白名單拿掉的指令，例如 \"npm run build\"",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "danger": {
+          "description": "加進危險清單的指令開頭，例如 \"terraform apply\"",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "dangerRemove": {
+          "description": "從預設危險清單拿掉的項目（用 xj doctor 看名稱）",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "secretFiles": {
+          "description": "加進機密檔的檔名樣式（例如 *.secret）或絕對路徑",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "secretFilesRemove": {
+          "description": "從預設機密檔拿掉的樣式，例如 .npmrc。要讓它碰機密檔，只能改這裡，不能在對話裡按「是」",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "extraReadable": {
+          "description": "工作目錄以外、也讓它讀的資料夾",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "sandbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "toolchainReadable": {
+          "description": "沙盒裡的指令可以讀的工具鏈位置，例如 ~/.cargo、Flutter SDK",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "writable": {
+          "description": "沙盒裡的指令可以寫的地方（工作目錄和暫存目錄以外），例如 ~/.npm、~/.pub-cache",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "allowedDomains": {
+          "description": "沙盒裡不用問就能連的網域",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "allowLocalBinding": {
+          "description": "讓指令能聽本機的連接埠（Flutter、Gradle 需要）",
+          "type": "boolean"
+        },
+        "gitconfig": {
+          "description": "沙盒裡的 git 讀哪一份全域設定：filtered（預設）只留 user.name、user.email 這類無害的設定，full 是整份 ~/.gitconfig（裡面的網址、token 沙盒裡都讀得到）",
+          "enum": ["filtered", "full"]
+        },
+        "excludedCommands": {
+          "description": "在沙盒外跑的指令開頭，例如 \"docker\"、\"docker compose\"：每次都問、按「是」才用你的權限跑（docker 要連 Docker，沙盒裡連不到）。要單獨一個指令，不能接管線、重新導向、包在別的指令裡",
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[^\\s/\\\\]+(\\s+\\S+)*$" }
+        },
+        "allowUnsandboxedCommands": {
+          "description": "沙盒裡跑不了的工具（例如 flutter、dart：每次都要寫 SDK 自己的資料夾，沙盒裡會卡住）讓模型要求在沙盒外跑那一個指令，每次都問你（預設 true）。false：一律拒絕，要用就關掉沙盒或列進 excludedCommands",
+          "type": "boolean"
+        },
+        "autoFixWritable": {
+          "description": "Windows：開沙盒時發現沙盒的帳號寫得進 PATH 上的地方，不問就用系統管理員權限擋掉（照樣跳 UAC）。預設 false：問你一次（是／否／永久允許；永久允許就是把這一項寫成 true）。/permissions 看得到、拿得掉",
+          "type": "boolean"
+        },
+        "writablePrograms": {
+          "description": "Windows：沙盒外要跑的程式（git、Git Bash、excludedCommands、flutter 這類、MCP server、搜尋用的 rg）放在沙盒寫得進去的地方時怎麼辦（沙盒裡的指令換得掉它們）。ask（預設）：開沙盒時問一次，這次對話有效；deny：不問、不在沙盒外跑（搜尋改在沙盒裡跑）；allow：不問、照樣跑。永久允許就是寫成 allow，/permissions 拿得掉",
+          "enum": ["ask", "deny", "allow"]
+        }
+      }
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "passthrough": {
+          "description": "跑指令時另外保留的環境變數，例如 JAVA_HOME、ANDROID_HOME。不能放 XING_JANUS_ 開頭的",
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" }
+        }
+      }
+    },
+    "keyFiles": {
+      "description": "沒有鑰匙圈的環境用：廠商 → 金鑰檔的路徑（絕對路徑或 ~ 開頭；相對路徑會從工作目錄讀，不收）。這些路徑自動算成機密檔",
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "capabilities": {
+      "description": "覆寫模型的能力，鍵是「廠商:模型」",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "contextTokens": { "type": "integer", "minimum": 1 },
+          "maxOutputTokens": { "type": "integer", "minimum": 1 },
+          "compactAtTokens": { "type": "integer", "minimum": 1 },
+          "tools": { "type": "string", "enum": ["reliable", "unreliable", "none"] },
+          "parallelToolCalls": { "type": "boolean" },
+          "imageInput": { "type": "boolean" },
+          "toolset": { "type": "string", "enum": ["full", "reduced"] },
+          "todoTool": { "description": "給不給待辦清單的工具（todo_write）；沒寫就是給", "type": "boolean" },
+          "webFetch": { "description": "給不給抓網頁的工具（web_fetch）；沒寫就是給", "type": "boolean" },
+          "subagents": { "description": "給不給子代理的工具（agent）；沒寫就是給", "type": "boolean" }
+        }
+      }
+    },
+    "mcp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "servers": {
+          "description": "MCP server：只接這裡列出的（repo 不能自己加），預設在沙盒裡跑",
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["command"],
+            "properties": {
+              "command": { "type": "string", "minLength": 1 },
+              "args": { "type": "array", "items": { "type": "string" } },
+              "env": { "type": "object", "additionalProperties": { "type": "string" } },
+              "description": { "description": "寫進 system prompt：這個 server 是做什麼的", "type": "string" },
+              "sandbox": { "description": "false：不在沙盒裡跑（不建議）", "type": "boolean" },
+              "autoApprove": { "description": "不用問就能呼叫的工具", "type": "array", "items": { "type": "string" } },
+              "readOnly": { "description": "唯讀、計劃模式也能用的工具", "type": "array", "items": { "type": "string" } },
+              "timeoutSec": { "type": "integer", "minimum": 1 }
+            }
+          }
+        }
+      }
+    },
+    "evals": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "budgetUsd": { "description": "每次評測最多花多少（美元），超過就停", "type": "number", "minimum": 0.01 }
+      }
+    },
+    "providers": {
+      "description": "用 Chat Completions 接的廠商：內建的 openai、ollama（可以改 baseURL 或關掉），加上自己的模型服務",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "type": "string", "enum": ["chat-completions"] },
+          "baseURL": { "type": "string", "pattern": "^https?://" },
+          "keyName": { "description": "鑰匙圈的項目名稱；沒寫就是 xing-janus-<名稱>", "type": "string", "minLength": 1 },
+          "enabled": { "type": "boolean" }
+        }
+      }
+    },
+    "anthropic": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fallback": {
+          "description": "被安全分類器擋下時，伺服器端換一個模型再試（default）或不試（off）",
+          "type": "string",
+          "enum": ["default", "off"]
+        },
+        "prefixMismatch": {
+          "description": "歷史被改過時：drop_block（丟掉失效的推理區塊繼續）或 error（直接報錯，測試用）",
+          "type": "string",
+          "enum": ["drop_block", "error"]
+        }
+      }
+    },
+    "sessions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "retentionDays": { "description": "對話紀錄保留幾天", "type": "integer", "minimum": 1 }
+      }
+    },
+    "windows": {
+      "description": "Windows 才用的設定：沒寫就自己找",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "gitBash": { "description": "Git Bash 的 bash.exe 完整路徑（例如 C:\\Program Files\\Git\\bin\\bash.exe）。沒寫就照 PATH 上的 git.exe 和預設的安裝位置找", "type": "string" },
+        "powershell": { "description": "pwsh.exe 或 powershell.exe 的完整路徑。沒寫就先找 PowerShell 7，再用 Windows 內建的", "type": "string" }
+      }
+    }
+  }
+}

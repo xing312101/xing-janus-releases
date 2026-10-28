@@ -1,0 +1,61 @@
+Xing Janus — Terms of Use
+Copyright (c) 2026 李俞興 (YU-XING LEE). All rights reserved.
+
+This English text is the operative version. A Chinese translation is provided
+in docs/terms.md for convenience only.
+
+USE AND REDISTRIBUTION
+
+1. Permission to use. Subject to these terms, you may use this software free
+   of charge, for personal or commercial purposes, on any number of machines.
+
+2. Redistribution. You may redistribute the official release archive verbatim,
+   including all signature and notice files. You may not distribute modified
+   versions, nor distribute files from the archive individually.
+
+3. Restrictions. You may not remove or alter copyright notices, nor reverse
+   engineer, decompile or disassemble the software, except to the extent such
+   restriction is prohibited by applicable law.
+
+4. Third-party components. The archive contains third-party software licensed
+   under its own terms; see THIRD_PARTY_LICENSES (and LGPL-2.1.txt where
+   included). Those terms prevail over these terms for those components.
+
+DISCLAIMERS
+
+5. AI-generated output. The software relays your requests to the AI models of
+   the providers you choose. Their answers, code and commands may be wrong,
+   outdated or unsafe, even when they appear confident. Review and test them
+   before you rely on them; you are responsible for the results. Generated
+   code may resemble existing code; you are responsible for checking its
+   license and copyright status before you use it.
+
+6. Cost estimates. Costs shown by the software are estimates, calculated from
+   a local price table and the usage reported by the provider. Providers may
+   change their prices or charge for items the software cannot see; your
+   provider's invoice is authoritative. Budget limits are an aid only and do
+   not guarantee that you will not exceed them.
+
+7. No warranty. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+   KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. The
+   copyright holder has no obligation to maintain the software, release
+   updates or provide support.
+
+8. Limitation of liability. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW,
+   THE COPYRIGHT HOLDER SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+   IN CONNECTION WITH THE SOFTWARE OR ITS USE, including without limitation
+   damage to or deletion of files, disclosure of data, API charges, suspension
+   of accounts and loss of business. This software runs commands and edits
+   files on your machine at your direction; you are responsible for reviewing
+   what it does.
+
+9. No affiliation. The software is not affiliated with, endorsed by or
+   sponsored by Anthropic, OpenAI or Google. Claude, GPT and Gemini are
+   trademarks of their respective owners.
+
+TERMINATION
+
+10. Termination. This permission terminates automatically if you breach these
+    terms.
