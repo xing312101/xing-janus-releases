@@ -11,7 +11,7 @@
   3. 沒有鑰匙圈，金鑰走金鑰檔（權限 600）或環境變數。**金鑰檔和 `~/.xing-janus` 不要放在 `/mnt/c`**：
      那裡的 `chmod 600` 是沒用的，等於沒有權限保護（`xj doctor` 會直接標成沒過）。
   4. 要能建 user namespace（bubblewrap 的前提）；新版 WSL2 預設可以。
-- **Node 24 以上**：`node -v` 看版本（24 是現役 LTS；26 也可以，23、25 已經結束支援，不要用）。
+- **Node 24 以上**：`node -v` 看版本。用 LTS 的版本（偶數的主版本）；奇數版只支援半年，很快就結束支援，不要用。
 - **ripgrep**：`brew install ripgrep`（沙盒和 search 都要用）。Windows：`winget install BurntSushi.ripgrep.MSVC`（只有 search 用）。
 
 ### Windows
@@ -22,6 +22,8 @@
   沒裝的話只剩 powershell 工具，而 PowerShell 只有白名單裡的唯讀寫法（`Get-ChildItem`、`Get-Content`…）不用問，其他的每個都要問。
   裝在別的地方的話，設定檔寫 `windows.gitBash`（見 config.md）。
 - **終端機**：用 Windows Terminal（Windows 11 內建）。舊的主控台顏色和貼上多行文字不一定正常，`xj doctor` 會提醒。
+  Git Bash 自己的視窗（mintty）不是 Windows 的主控台：xj 在那裡只能用陽春的畫面，第一次的使用提醒、`xj setup` 也做不了。
+  要用 Git Bash 的話，在 Windows Terminal 裡開（Git 的安裝程式可以在 Windows Terminal 新分頁的選單加一個 Git Bash）。
 - **沙盒（alpha，可以不裝）**：指令用一個專用的 `srt-sandbox` 帳號跑，網路用 Windows 防火牆擋、檔案用權限（ACL）擋。
   要用系統管理員權限設定一次：在開始功能表的 Windows PowerShell 上按右鍵 →「以系統管理員身分執行」，然後：
 
@@ -56,6 +58,20 @@ npm install -g --ignore-scripts @anthropic-ai/sandbox-runtime@0.0.79
 - 不裝的話沙盒起不來，xj 會拒絕跑任何指令。要不經過沙盒跑，啟動時加 `--no-sandbox`（每個指令都會先問你）。
 
 ## 安裝
+
+### macOS：用 Homebrew
+
+```bash
+brew tap xing312101/xing-janus
+brew trust --formula xing312101/xing-janus/xj
+brew install xj
+```
+
+Homebrew 預設不載入第三方 tap 的 formula，`brew trust` 只信任 xj 這一個（不是整個 tap）。Node 和 ripgrep 會一起裝好。xj 自己一律用 brew 裝的 node 跑（nvm 切到哪一版都不影響），你專案裡的指令照舊用 PATH 上的 node。
+formula 由 tap 自己的 workflow 照這個發佈頁面最新的版本更新：更新之前先用公鑰驗過簽章（brew 本身只核對 SHA-256），
+下載的檔案 brew 會照 formula 核對 SHA-256。想自己再驗一次的話，照下面手動安裝的第 2 步。裝好之後跑 `xj doctor`。
+
+### 手動安裝（Linux、Windows，或不用 Homebrew）
 
 1. 到 releases 頁面下載你那個平台的 `xj-<版本>-<平台>.tar.gz`、`.sha256` 和 `.minisig`。`<平台>`：
    - macOS：`darwin`（Apple 晶片和 Intel 共用一個）
@@ -147,10 +163,24 @@ npm install -g --ignore-scripts @anthropic-ai/sandbox-runtime@0.0.79
 
 ## 更新
 
-Xing Janus 不會自己連網路檢查更新（它對外的連線只有模型的 API）。看 releases 頁面有沒有新版，照上面的步驟下載、驗證、解壓，再把 `xj` 的連結指到新的資料夾。
+用 Homebrew 裝的：`brew upgrade xj`。
+
+手動裝的（macOS、Linux、Windows）：`xj update`。`xj update --check` 只看有沒有新版、不下載。v0.1.0 還沒有 `xj update`：從 v0.1.0 要照下面最後一段手動更新一次。
+
+- Xing Janus 不會自己連網路檢查更新（它平常對外的連線只有模型的 API）：你打 `xj update` 才連，只連 GitHub（查 releases 頁面最新的版本、下載那一版的檔案）。
+  要經過 proxy 的話，設 `NODE_USE_ENV_PROXY=1` 和 `HTTPS_PROXY`。
+- 只裝比現在新的版本；下載之後先驗 SHA-256 和簽章（用這一版裡內建的公鑰，不從網路拿），簽章的附註也要是那一版、那個檔，都過了才換上。
+  你照上面第 2 步自己留了公鑰（`~/.xing-janus/minisign.pub`）的話，它要跟內建的是同一把，不一樣就停下來（可能換了金鑰，也可能檔案被換過：先看 README 和 CHANGELOG）。
+- macOS、Linux：新版解在舊版的旁邊（例如 `~/.local/share/xj-<新版本>-<平台>`），PATH 上指到舊版的 `xj` 連結改指新版；舊版留著，確定沒問題之後自己刪。
+- Windows：新版先解在旁邊（`%LOCALAPPDATA%\Programs\xj.update`），這個 xj 結束之後才換上（舊的改名成 `xj.old`），下次開的就是新版；PATH 不用改。
+- 新版要的 sandbox-runtime 版本不一樣的話（Linux、Windows 是你自己裝的），`xj update` 會印出要重裝的那一行。
+
+也可以照上面的步驟自己下載、驗證、解壓，再把 `xj` 的連結指到新的資料夾。
 Windows：先關掉正在跑的 xj，照「Windows 的安裝」的第 3 步再做一次（換掉 `%LOCALAPPDATA%\Programs\xj` 裡的檔案；PATH 已經有了就不會再加）。設定和對話紀錄在 `~/.xing-janus/`，不受影響。
 
 ## 移除
+
+用 Homebrew 裝的：`brew uninstall xj`、`brew untap xing312101/xing-janus`，再照下面刪掉 `~/.xing-janus` 和鑰匙圈裡的金鑰。
 
 ```bash
 xj reset                                           # 刪掉 ~/.xing-janus（會先列出來、問過再刪）

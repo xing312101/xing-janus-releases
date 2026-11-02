@@ -11,7 +11,7 @@
   3. There is no keychain: keys go in a key file (permissions 600) or an environment variable. **Do not put key files or `~/.xing-janus` under `/mnt/c`**:
      `chmod 600` does nothing there, so there is no permission protection at all (`xj doctor` marks it as failed).
   4. Creating user namespaces must be allowed (bubblewrap needs it); recent WSL2 allows it by default.
-- **Node 24 or later**: check with `node -v` (24 is the active LTS; 26 also works; 23 and 25 are out of support, do not use them).
+- **Node 24 or later**: check with `node -v`. Use an LTS version (an even major version); odd versions are supported for only six months, so do not use them.
 - **ripgrep**: `brew install ripgrep` (the sandbox and search both use it). Windows: `winget install BurntSushi.ripgrep.MSVC` (only search uses it).
 
 ### Windows
@@ -22,6 +22,8 @@
   Without it only the powershell tool is left, and in PowerShell only whitelisted read-only forms (`Get-ChildItem`, `Get-Content`…) run without asking; everything else asks every time.
   If it is installed somewhere else, set `windows.gitBash` in the config (see config.md).
 - **Terminal**: use Windows Terminal (built into Windows 11). In the old console, colors and pasting several lines may not work; `xj doctor` warns about it.
+  Git Bash's own window (mintty) is not a Windows console: xj only gets a bare screen there, and the first-run notice and `xj setup` cannot run.
+  To use Git Bash, open it in Windows Terminal (Git's installer can add a Git Bash entry to Windows Terminal's new-tab menu).
 - **Sandbox (alpha, optional)**: commands run as a dedicated `srt-sandbox` account; the network is blocked by Windows Firewall and files by permissions (ACLs).
   It needs a one-time setup with administrator rights: in the Start menu, right-click Windows PowerShell → "Run as administrator", then:
 
@@ -56,6 +58,20 @@ npm install -g --ignore-scripts @anthropic-ai/sandbox-runtime@0.0.79
 - Without it the sandbox cannot start, and xj refuses to run any command. To run commands without the sandbox, start with `--no-sandbox` (every command asks you first).
 
 ## Install
+
+### macOS: with Homebrew
+
+```bash
+brew tap xing312101/xing-janus
+brew trust --formula xing312101/xing-janus/xj
+brew install xj
+```
+
+Homebrew does not load formulae from third-party taps by default; `brew trust` trusts only the xj formula (not the whole tap). Node and ripgrep are installed with it. xj itself always runs on the node that brew installed (whatever version nvm switches to does not matter), and commands in your projects still use the node on your PATH.
+The formula is updated by the tap's own workflow from the latest version on this releases page: it verifies the signature with the public key first (brew itself only checks SHA-256),
+and brew checks the downloaded file against the formula's SHA-256. To verify it yourself as well, follow step 2 of the manual install below. Then run `xj doctor`.
+
+### Manual install (Linux, Windows, or without Homebrew)
 
 1. From the releases page, download your platform's `xj-<version>-<platform>.tar.gz`, `.sha256` and `.minisig`. `<platform>`:
    - macOS: `darwin` (one file for both Apple silicon and Intel)
@@ -147,10 +163,24 @@ First install what the "Windows" list above needs. In PowerShell:
 
 ## Update
 
-Xing Janus never goes online by itself to check for updates (its only outside connections are the model APIs). Check the releases page for a new version, then download, verify and unpack it as above, and point the `xj` link at the new folder.
+Installed with Homebrew: `brew upgrade xj`.
+
+Installed by hand (macOS, Linux, Windows): `xj update`. `xj update --check` only checks whether a new version is out, without downloading. v0.1.0 does not have `xj update` yet: from v0.1.0, update by hand once as in the last paragraph below.
+
+- Xing Janus never goes online by itself to check for updates (normally its only outside connections are the model APIs): it connects only when you run `xj update`, and only to GitHub (to look up the latest version on the releases page and download its files).
+  Behind a proxy, set `NODE_USE_ENV_PROXY=1` and `HTTPS_PROXY`.
+- It only installs versions newer than yours. After downloading it checks the SHA-256 and the signature (with the public key built into this version, never one fetched from the network), and the signature's trusted comment must name that version and file; only then does it install.
+  If you kept your own copy of the public key as in step 2 above (`~/.xing-janus/minisign.pub`), it must be the same key as the built-in one, or xj update stops (the key may have changed, or files may have been replaced: check the README and CHANGELOG first).
+- macOS, Linux: the new version is unpacked next to the old one (for example `~/.local/share/xj-<new version>-<platform>`) and the `xj` link on PATH that points to the old one is switched to the new one. The old version stays; delete it yourself once the new one works.
+- Windows: the new version is first unpacked next to it (`%LOCALAPPDATA%\Programs\xj.update`) and swapped in after this xj exits (the old one is renamed `xj.old`); the next start runs the new version, and PATH does not change.
+- If the new version needs a different sandbox-runtime (installed by you on Linux and Windows), xj update prints the line to reinstall it.
+
+You can also download, verify and unpack it yourself as above, and point the `xj` link at the new folder.
 Windows: quit any running xj first, then repeat step 3 of "Installing on Windows" (it replaces the files in `%LOCALAPPDATA%\Programs\xj`; PATH is not added again if it is already there). The config and session logs live in `~/.xing-janus/` and are not affected.
 
 ## Uninstall
+
+Installed with Homebrew: `brew uninstall xj` and `brew untap xing312101/xing-janus`, then delete `~/.xing-janus` and the keys in the keychain as below.
 
 ```bash
 xj reset                                           # delete ~/.xing-janus (lists what will go and asks first)

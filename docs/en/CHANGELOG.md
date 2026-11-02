@@ -2,6 +2,63 @@
 
 Versions follow semver.
 
+## 0.1.1
+
+**Requires**: the same as 0.1.0 — macOS, Linux or Windows; Node 24 or later; `ripgrep`. On Linux also bubblewrap, socat and sandbox-runtime 0.0.79;
+on Windows, Git for Windows (see `docs/en/install.md`).
+
+**Updating from 0.1.0**: 0.1.0 has no `xj update` yet, so update by hand this once, following the last paragraph of "Update" in `docs/en/install.md`;
+from then on `xj update` does it (if you installed with Homebrew, use `brew upgrade xj`). Your config, keys and transcripts stay as they are.
+
+**Verify after downloading** (keep the two files next to the archive):
+
+```bash
+shasum -a 256 -c xj-0.1.1-darwin.tar.gz.sha256
+minisign -Vm xj-0.1.1-darwin.tar.gz -P <your saved copy of the public key>
+```
+
+The Linux files are `xj-0.1.1-linux-x64.tar.gz` or `xj-0.1.1-linux-arm64.tar.gz` (check the SHA-256 with `sha256sum -c`); Windows is `xj-0.1.1-windows.zip`
+(for verifying in PowerShell, see the 0.1.0 section below). If this is your first install, follow `docs/en/install.md`, then run `xj setup`.
+
+New:
+
+- macOS: install with Homebrew (`docs/en/install.md`); the tap verifies the signature with the public key before it updates the formula
+- `xj update`: connects to GitHub only when you run it, installs only a newer version, and switches over only after the SHA-256 and the signature check out;
+  `xj update --check` only tells you whether there is one
+- Several API keys for the same provider: give each a name, pick by folder (`keys.<provider>.byFolder`), switch with `--key` or `/key`;
+  if the chosen key cannot be found, xj does not start; spending is recorded per key, and each key can have its own daily and monthly limits
+- On start, xj measures how this terminal draws emoji sequences and ambiguous-width characters (macOS Terminal.app and the old Windows console differ from other terminals;
+  the "treat ambiguous-width characters as wide" setting is measured too) and lays out the screen accordingly: a line with emoji in the approval screen
+  no longer overflows and pushes the right column away. Character widths now follow the Unicode tables
+- Switching platforms inside xj: `/model` picks a platform first (showing which are on this computer, where each connects and where its key is kept),
+  then a model; servers on this computer (Ollama, LM Studio, llama.cpp, vLLM) are found for you, and you can add an OpenAI-compatible service.
+  A missing key is pasted right there (only • is shown; it is saved only if the model list answers, in the same place as `xj setup`).
+  xj checks that the other platform answers before switching, and keeps the current one if it does not; it asks before the conversation goes to
+  another machine. The choice is saved as `defaultModel` in the config (`/model` used to switch for the current session only)
+
+Fixed:
+
+- Security: search blocks hard links to secret files the same way read does; dangerous commands are recognized regardless of case and with `.exe`
+  (`BASH -c`, `NOHUP`); quoting in PowerShell run with administrator rights is escaped more thoroughly; `SKILL.md` cannot be a link to somewhere else;
+  network paths on PATH are not read before you are asked
+- Spending: the summary made before switching to another provider checks the budget first; a subagent using another provider's model follows that key's limits
+- Windows: another file (README.md, for example) was sometimes taken for a hard link to `.env`, blocking the whole command; the first logon of the sandbox account
+  gets more time; the read-attributes-only permission on parent folders is now removed when xj exits (before, only the next time the sandbox started);
+  the clipboard no longer gets an invisible U+FEFF; PowerShell 7 installed in your user folder cannot run in the sandbox, so while the sandbox is on
+  xj uses PowerShell 7 under Program Files or the built-in 5.1 and says so at start and in `xj doctor`;
+  opened in Git Bash's own window (mintty), xj explains that it is not a Windows console and to use Windows Terminal instead (before, it only said it needed a terminal),
+  and Ctrl-C works as in a terminal there (interrupts the turn, press twice to leave; before, one press ended xj); `xj` starts in Cygwin
+  (before, the launcher handed the `/cygdrive/…` path to node unchanged); starting while the computer is busy (a build running in the background, for example)
+  no longer garbles non-English output of programs such as cmd and where for the whole session (before, one timeout while asking for the system code page
+  meant reading everything as UTF-8 until xj was restarted), and the skip-permissions mode is no longer refused because the check for administrator
+  rights timed out
+- Screen: the approval screen wraps by visible character (flags and emoji are not split); after switching to full screen or resizing,
+  the question is rewrapped to the new width; copying wrapped rows by dragging no longer includes the indentation
+- Other: what xj has to tell you about the sandbox is also said at start (before, only in `xj doctor`); `xj -p` also prints config warnings;
+  the date given to the model uses this computer's time zone; the key row of `xj doctor` says why a key was not found;
+  Ctrl-C while xj is still starting up (for example while the sandbox starts) cleans up and exits (before, it did nothing until startup finished)
+- User docs: every setting lists its default
+
 ## 0.1.0
 
 The first version.

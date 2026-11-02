@@ -2,6 +2,54 @@
 
 版本號照 semver。
 
+## 0.1.1
+
+**需要**：跟 0.1.0 一樣 —— macOS、Linux 或 Windows，Node 24 以上、`ripgrep`；Linux 另外要 bubblewrap、socat 和 sandbox-runtime 0.0.79，
+Windows 要 Git for Windows（見 `docs/install.md`）。
+
+**從 0.1.0 更新**：0.1.0 還沒有 `xj update`，這一次照 `docs/install.md`「更新」那一節的最後一段手動換；之後打 `xj update` 就好
+（Homebrew 裝的用 `brew upgrade xj`）。設定檔、金鑰、對話紀錄都不用動。
+
+**下載之後先驗**（兩個檔案跟壓縮檔一起放）：
+
+```bash
+shasum -a 256 -c xj-0.1.1-darwin.tar.gz.sha256
+minisign -Vm xj-0.1.1-darwin.tar.gz -P <你留的那份公鑰>
+```
+
+Linux 是 `xj-0.1.1-linux-x64.tar.gz` 或 `xj-0.1.1-linux-arm64.tar.gz`（SHA-256 用 `sha256sum -c` 驗），Windows 是 `xj-0.1.1-windows.zip`
+（PowerShell 的驗法見下面 0.1.0 那一段）。第一次用的話，照 `docs/install.md` 裝好、跑 `xj setup`。
+
+新的：
+
+- macOS 可以用 Homebrew 裝（`docs/install.md`）；tap 更新 formula 之前先用公鑰驗過簽章
+- `xj update`：你打了才連 GitHub，只裝比現在新的版本，SHA-256 和簽章都驗過才換上；`xj update --check` 只看有沒有新版
+- 同一家可以有好幾把 API key：各取名字，照資料夾選（`keys.<廠商>.byFolder`）、`--key` 或 `/key` 換；選到的那一把找不到就不啟動；
+  花費照 key 分開記，每一把可以另外設每天、每月的上限
+- 開 xj 時先量這個終端機把 emoji 的組合、寬度不明確的字畫成幾格（macOS 的 Terminal.app、舊的 Windows 主控台跟其他終端機不一樣；
+  「寬度不明確的字當成兩格」的設定也量得到），排版照量到的算：核准畫面有 emoji 的那一行不會再溢出、把右邊那一欄推走。一個字佔幾格改照 Unicode 的表
+- 在 xj 裡換平台：`/model` 先選平台（標出本機的、連到哪裡、金鑰放在哪裡）、再選模型；這台的本機伺服器（Ollama、LM Studio、llama.cpp、vLLM）
+  自己找出來，也能新增 OpenAI 相容的服務。還沒設金鑰的當場貼上（畫面上只顯示 •，查得到模型清單才存，存法跟 `xj setup` 一樣）。
+  換到別的平台之前先確認連得上，連不上就照舊用原本的；對話要送到別台電腦之前先問。換了就記進設定檔的 `defaultModel`（以前 `/model` 只換這次對話）
+
+修正：
+
+- 安全：search 也照 read 擋指到機密檔的 hard link；危險指令不分大小寫、帶 `.exe` 的也認（`BASH -c`、`NOHUP`）；
+  用系統管理員權限跑的 PowerShell 引號跳脫得更完整；`SKILL.md` 不能是指到別處的連結；PATH 上的網路路徑在問你之前不去讀
+- 花費：換到別家之前的摘要也先看預算；子代理用別家的模型時照那一把 key 的上限
+- Windows：有時把別的檔案（例如 README.md）當成 `.env` 的 hard link、整個指令被擋；沙盒的帳號第一次登入等得比較久；
+  xj 結束時就收回上層資料夾的權限（以前要等下一次開沙盒才收）；剪貼簿不會多一個看不見的 U+FEFF；
+  裝在使用者資料夾的 PowerShell 7 在沙盒裡跑不了：沙盒開著時改用 Program Files 的 7 或內建的 5.1，開場和 `xj doctor` 講一聲；
+  在 Git Bash 自己的視窗（mintty）裡開的話，講清楚那不是 Windows 的主控台、請換到 Windows Terminal（以前只說「要在終端機裡」），
+  Ctrl-C 也跟終端機裡一樣（中斷這一輪，連按兩次離開；以前按一次就結束）；Cygwin 裡打 `xj` 開得起來（以前啟動器把 `/cygdrive/…` 的路徑原封不動交給 node）；
+  電腦很忙的時候（例如背景在 build）開始用，cmd、where 這類程式的中文輸出不會整個對話都變亂碼（以前問系統的字碼頁逾時一次就整個對話照 UTF-8 讀），
+  開全部不問模式也不會被誤判成用系統管理員權限在跑而開不了
+- 畫面：核准畫面照看得到的一個字換行（國旗、emoji 不會被切開）；換成全螢幕、改視窗大小之後，詢問的內容照新的寬度重排；
+  拖曳複製折下來的那幾列不會帶進縮排的空白
+- 其他：沙盒要講一聲的事開場也講（以前只有 `xj doctor` 講）；`xj -p` 也印設定檔的警告；告訴模型的日期照這台電腦的時區；
+  `xj doctor` 金鑰那一列寫出找不到的原因；開場還在準備（例如開沙盒）的時候按 Ctrl-C 會收尾、結束（以前沒反應，要等開場做完）
+- 使用者文件：每一項設定都寫出預設值
+
 ## 0.1.0
 
 第一個版本。

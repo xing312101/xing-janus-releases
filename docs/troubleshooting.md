@@ -7,6 +7,7 @@
 | 沙盒啟動不了 | 照 `xj doctor` 說的裝好缺的東西（macOS：ripgrep；Linux：bubblewrap、socat、ripgrep、sandbox-runtime）。這時所有指令一律拒絕；真的要不經過沙盒跑，啟動時加 `--no-sandbox`（每個指令都要問） |
 | Linux：找不到 apply-seccomp、版本不對 | 照訊息裡的那一行重裝 sandbox-runtime（`npm install -g --ignore-scripts @anthropic-ai/sandbox-runtime@<版本>`，見 [install.md](install.md) 的「Linux 的沙盒」）。用 nvm 的話，用跑 xj 的那個 Node 版本來裝 |
 | 401、403 | key 錯了或沒有權限。`xj doctor` 會說 key 從哪裡讀的 |
+| `/model` 換不過去（查詢失敗、連不上） | 換到別的平台之前，xj 會先查一次那一家的模型清單，查不到就照舊用原本的。本機的伺服器（Ollama、LM Studio…）要先開著；網址錯了改設定檔的 `providers`。金鑰被拒：還沒設金鑰的那一家會當場問你；已經有金鑰、但被拒的，用 `xj setup` 換一把。說「選的是叫…的那一把」：設定檔的 `keys` 指定了有名字的那一把，照 config.md 的「同一家好幾把 key」放好，或用 `/key` 換。輸入不是終端機（管線）時不能當場設金鑰，用 `xj setup` |
 | 429 | 被限流。Xing Janus 會照 retry-after 退避，最多重試 3 次 |
 | 額度用完 | 到各家的後台看用量和預算 |
 | 上下文太長 | 會自動摘要再試一次；還是太長就 `/clear` 開新的對話 |
@@ -45,6 +46,8 @@
 | 開著沙盒，白名單卻不生效、每個指令都問，而且說「寫得進沙盒外會被執行的地方」 | xj 開沙盒時會實際試寫 PATH 上的每個資料夾（還有沙盒讀得到的工具鏈、Git Bash 自己的資料夾、`excludedCommands` 的 SDK）：寫得進去的話，沙盒裡的指令就能在那裡放程式，之後在沙盒外以你的權限執行，所以白名單不生效（2026-10-27 加的）。常見原因是工具裝在 `C:\tools`、`D:\` 這種「所有登入的帳號都改得了」的地方。**PATH 上指到不存在的資料夾也算**（例如軟體移除了、PATH 那一筆還在）：沙盒在上層把它建出來、在裡面放程式就行 —— 最簡單的修法是把它從 PATH 拿掉；上層是磁碟的根目錄時，印的 icacls 只擋那一層建檔、建資料夾（`(WD,AD)`，不往下繼承）。要讓白名單回來：把那些工具改裝到 `Program Files`，或用系統管理員權限跑警告裡印的 `icacls "<資料夾>" /deny *<SID>:(OI)(CI)(WD,AD,WEA,WA,DC,DE)`（印的是往上連續寫得進去的最上層，例如 `C:\src`），再重開 xj。xj 會問你要不要直接幫你擋（用系統管理員權限，跳 UAC；可以永久允許），全部不問模式不問就擋，見 usage.md 的「全部不問模式」 |
 | 沙盒開著，`flutter`、`dart` 每次都問「在沙盒外跑」 | 正常：它們在沙盒裡跑不了（每次都要寫 SDK 的 `bin\cache`，沙盒裡會卡住），xj 直接告訴模型，由它要求在沙盒外跑那一個指令、每次問你。不想被問：用 `xj --no-sandbox` 開（整個沒有沙盒），或在設定檔設 `"sandbox": { "excludedCommands": ["flutter", "dart"] }`（一樣每次問）。見 config.md「沙盒裡跑不了的工具」 |
 | 沙盒裡 `curl`、`git` 連 https 出現 `CRYPT_E_REVOCATION_OFFLINE` | Windows 內建的 TLS（schannel）查憑證撤銷時連不出去（被沙盒的防火牆擋）。`curl --ssl-no-revoke`、`git -c http.schannelCheckRevoke=false` |
+| 在 Git Bash 的視窗裡開 xj：說「要在終端機裡」，沒有全螢幕、狀態列 | Git Bash 自己的視窗（mintty）不是 Windows 的主控台：Git for Windows 預設不開虛擬主控台，xj（node）拿到的是管線、不是終端機（開場和 `xj doctor` 都會講）。請在 Windows Terminal、PowerShell 或 cmd 的視窗裡開 xj；Git Bash 也可以開在 Windows Terminal 裡（新分頁的選單裡的 Git Bash，Git 的安裝程式可以加） |
+| 在 MSYS2、Cygwin 的 mintty 裡（或開了虛擬主控台的 Git Bash 視窗），有 emoji、「…」這類字的那一行，全螢幕右邊那一欄對不齊 | 中間多一層 Windows 的虛擬主控台（ConPTY）：xj 開場量到的是那一層算的寬度，mintty 實際畫的不一樣，xj 量不到。內容都在，只是右邊那一欄往左或往右跑。要對齊的話在 Windows Terminal 裡開 xj，或用 `/tui classic` 換成一般模式 |
 | 找不到 Git Bash | 裝 Git for Windows，或在設定檔寫 `"windows": { "gitBash": "C:\\…\\bin\\bash.exe" }`。`C:\Windows\System32\bash.exe` 是 WSL 的啟動程式，不是 Git Bash，xj 不會用它 |
 | 沙盒裡跑 node 的腳本（`npm test`、`node --test`、`node 檔案.js`）出現 `EPERM: operation not permitted, lstat 'C:\Users\<你>\Desktop'` | Node 找腳本的實際路徑時，要讀每一層上層資料夾的屬性。xj 開沙盒時會替家目錄裡的那幾層加「只能讀屬性」的權限（見下面「不一樣的地方」），正常就不會這樣。還是出現的話，看開場有沒有「上層資料夾加不上權限」的提醒（例如公司的電腦擋了 PowerShell）：這時這類指令改在沙盒外跑（設定檔的 `sandbox.excludedCommands` 加 `npm`、`node`，每次都先問你） |
 | 沙盒裡的 PowerShell 印出 `Project:\src\…` 這種路徑 | 沙盒的帳號讀不到你家目錄這些上層的資料夾，PowerShell 自己進不了工作目錄（會停在 `C:\`），所以 xj 開一個指到工作目錄的 `Project:` 磁碟機讓它進去。`Project:\src\a.ts` 就是專案裡的 `src\a.ts` |
@@ -53,7 +56,7 @@
 | MCP server 說「Windows 的沙盒現在不能跑 MCP server」 | Windows 的沙盒還沒辦法把 stdin 接給沙盒裡的程式，而 MCP（stdio）靠的就是 stdin。要用的話在設定檔把那個 server 的 `sandbox` 設成 `false`：它會以你的權限在沙盒外跑，每次呼叫照樣先問你（除非列在 `autoApprove`）。只給你信任的 server 這樣設 |
 | 擔心在別人的 repo 裡打 `xj` 會跑到 repo 裡的同名程式 | xj.cmd 自己找 node 時不找目前的資料夾，也不用工作目錄底下的 node（PATH 上經過 junction 指進工作目錄的認不出來：批次檔沒辦法查實際路徑，Git Bash 用的 sh 啟動器認得）。但「找 xj.cmd 本身」是 cmd.exe 的事：cmd 會先找目前的資料夾，所以 repo 裡放一個 `xj.cmd` 就會被執行。建議用 PowerShell（它不找目前的資料夾），或在系統的環境變數設 `NoDefaultCurrentDirectoryInExePath=1` |
 | 啟動時說「xj 不採用 NODE_OPTIONS」 | Windows 的 xj.cmd 整個不採用 NODE_OPTIONS（批次檔拆不了引號，沒辦法只留安全的那幾個）；裡面有 `--use-system-ca`、`--use-openssl-ca` 的話會直接傳給 node |
-| 中文的輸出變亂碼 | PowerShell 工具的輸出、`Get-Content`／`Set-Content`／`Out-File`／`>` 讀寫檔，xj 都已經改成 UTF-8（Windows 內建的 PowerShell 5.1 寫出來的檔案會帶 BOM，所以建檔、改檔請讓它用 write、edit 工具）。Git Bash 裡跑 Windows 內建的程式（`ipconfig`、`cmd //c dir`）會用主控台的字碼頁，這個 xj 改不了 |
+| 中文的輸出變亂碼 | PowerShell 工具的輸出、`Get-Content`／`Set-Content`／`Out-File`／`>` 讀寫檔，xj 都已經改成 UTF-8（Windows 內建的 PowerShell 5.1 寫出來的檔案會帶 BOM，所以建檔、改檔請讓它用 write、edit 工具）。Git Bash 裡跑 Windows 內建的程式（`ipconfig`、`cmd //c dir`）照主控台的字碼頁輸出：xj 一行一行判斷，不是 UTF-8 的那幾行照系統的字碼頁讀（中文的 Windows 是 Big5）。還是亂碼的話，多半是那個程式自己換了字碼頁（例如先跑過 `chcp`） |
 | xj doctor 的「程序收尾」說 job object 不能用 | xj 用 Windows 內建的 PowerShell 5.1 在背景管理 job object（Ctrl-C、逾時時收掉指令開的每個程序）。公司的電腦把 PowerShell 或 Add-Type 擋掉的話就用不了：這時 Ctrl-C 可能收不乾淨 Git Bash 開的背景程序，xj 結束時看門狗會再收一次 |
 | 指令開的程式（視窗程式、`start` 開的、Gradle daemon）指令一結束就不見了 | xj 把每個指令開的程式都放進同一個 job object，指令結束時整個收掉（Git Bash 開的背景程序才收得乾淨；開著沙盒時是沙盒自己的 job object，一樣會收），比 macOS、Linux 嚴。要留著用的程式（開發伺服器、模擬器、編輯器）請在 xj 外面自己開。Gradle 的 daemon 每次 build 會重開一個（每次多等幾秒，結果不受影響） |
 | Git Bash 的指令找不到 `~/.gitconfig`、`~/.ssh`（網域帳號、家目錄在網路磁碟上） | 沒有沙盒時 xj 直接跑 Git 的 `usr\bin\bash.exe`，沒有 HOME 的話照 Git Bash 的規則補：`HOMEDRIVE`＋`HOMEPATH` 是存在的資料夾就用它，不然用 `USERPROFILE`。要固定用某個資料夾，在 Windows 的使用者環境變數設 `HOME` |

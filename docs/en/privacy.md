@@ -3,9 +3,10 @@
 ## Where it goes
 
 - What you type, the file contents it reads and the output of commands are sent to the model service you chose (Anthropic, OpenAI, Gemini, or a local Ollama), under that service's terms.
-- Xing Janus itself collects nothing: no telemetry, no crash reports, no automatic update checks. Its only outside connections are the model APIs and the domains you allow.
+- Xing Janus itself collects nothing: no telemetry, no crash reports, no automatic update checks. Its only outside connections are the model APIs, the domains you allow, and GitHub when you run `xj update` (it only looks up the version and downloads the release files; it sends no data).
 - Fetching web pages (`web_fetch`): the website sees the full URL, your IP address and the User-Agent `xing-janus/<version>`; no cookies and no login details are sent.
   What it fetches is treated like a file it read: it is sent to the model and saved in the session log. URLs are not sent anywhere else to be checked.
+- Switching platforms with `/model`: the conversation so far (including file contents it read and command output) is handed over as text to that platform, and everything after it goes there too. If the conversation has content, xj asks first and says which machine it goes to (it does not ask for a platform on this computer: the conversation stays on it).
 - Subagents: they use the same provider as the main conversation; if you name another provider's model, the instructions and whatever it reads go to that provider.
 - Before anything is sent, keys in known formats (`sk-ant-`, `sk-proj-`, `AIza`, `ghp_`, `AKIA`…) are masked. That is a last line of defense; secret files cannot be read in the first place.
 

@@ -53,7 +53,7 @@ Xing Janus 會在你的電腦上讀檔、改檔、跑指令。它的守門層叫
   它不會叫你擋家目錄、專案或它們的上層（那會連 xj 要寫的地方一起擋）。
   **放在那些地方、會在沙盒外跑的程式**（xj 自己的 git、跑沙盒外指令的 Git Bash、`excludedCommands`、flutter 這類沙盒裡跑不了的工具、MCP server、搜尋用的 rg）
   沙盒裡的指令換得掉，之後 xj 在沙盒外用你的權限跑的就是換過的那一支：開沙盒時問你一次這次對話要不要照樣在沙盒外跑（選「否」的話它們不跑，搜尋改在沙盒裡跑），
-  之後每次用到都標紅。設定檔的 `sandbox.writablePrograms` 可以改成不問就不跑（`"deny"`）或不問照樣跑（`"allow"`），見 config.md。
+  之後要你核准才跑的指令照樣每次問、標紅。設定檔的 `sandbox.writablePrograms` 可以改成不問就不跑（`"deny"`）或不問照樣跑（`"allow"`），見 config.md。
 - **Windows：開著沙盒的時候，不要同時在不可信的專案裡開另一個 xj**：所有 xj 的沙盒都用同一個 `srt-sandbox` 帳號；
   xj 開沙盒時先開放資料夾、最後才擋機密檔，這段時間裡（工具鏈大的話要好幾分鐘）另一個 xj 的沙盒讀得到這個專案的 `.env` 這類機密檔。
 - **Windows：`flutter`、`dart` 不能在沙盒裡跑**（2026-10-27 實測）：它們的 `.bat` 要寫 Flutter SDK 的 `bin\cache`（鎖檔、各種 `.stamp`），

@@ -55,7 +55,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["model", "effort", "mode", "sandbox", "context", "day-cost", "session-cost", "month-cost", "todo", "progress"]
+            "enum": ["model", "key", "effort", "mode", "sandbox", "context", "day-cost", "session-cost", "month-cost", "todo", "progress"]
           }
         }
       }
@@ -115,7 +115,7 @@
           "items": { "type": "string", "minLength": 1 }
         },
         "dangerRemove": {
-          "description": "從預設危險清單拿掉的項目（用 xj doctor 看名稱）",
+          "description": "從預設危險清單拿掉的項目，寫名稱（例如 git-push；名稱見 docs/config.md 的「內建的白名單、危險清單、機密檔」）",
           "type": "array",
           "items": { "type": "string", "minLength": 1 }
         },
@@ -156,7 +156,7 @@
           "items": { "type": "string", "minLength": 1 }
         },
         "allowLocalBinding": {
-          "description": "讓指令能聽本機的連接埠（Flutter、Gradle 需要）",
+          "description": "讓指令能聽本機的連接埠（Flutter、Gradle 需要）。macOS 上同時放行連到這台電腦的每一個本機連接埠（Ollama、資料庫…），不經過網域的詢問",
           "type": "boolean"
         },
         "gitconfig": {
@@ -194,9 +194,44 @@
       }
     },
     "keyFiles": {
-      "description": "沒有鑰匙圈的環境用：廠商 → 金鑰檔的路徑（絕對路徑或 ~ 開頭；相對路徑會從工作目錄讀，不收）。這些路徑自動算成機密檔",
+      "description": "沒有鑰匙圈的環境用：廠商 → 金鑰檔的路徑（絕對路徑或 ~ 開頭；相對路徑會從工作目錄讀，不收）。同一家好幾把的話鍵寫成「廠商:名字」（例如 anthropic:work）。這些路徑自動算成機密檔",
       "type": "object",
       "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "keys": {
+      "description": "同一家好幾把 key：鍵是廠商（anthropic、openai，或 providers 裡的名稱）。沒寫就只有一把（叫 default），跟以前一樣",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "default": { "description": "沒有對到 byFolder 的資料夾用哪一把（沒寫就是 default，也就是沒有名字的那一把）", "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "byFolder": {
+            "description": "資料夾 → 用哪一把：那個資料夾和底下的子資料夾（~ 開頭或絕對路徑；可以用 glob）。對到好幾條的話最長的那一條優先",
+            "type": "object",
+            "additionalProperties": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }
+          },
+          "onReject": {
+            "description": "這一把被拒（額度用完、key 失效、一直被限流）時：ask 問你要不要換（預設）、auto 直接換、off 停下來。只會換到這個資料夾也能用的（byFolder 對到的和 failover 列的）",
+            "type": "string",
+            "enum": ["ask", "auto", "off"]
+          },
+          "failover": { "description": "被拒時另外可以換的（照順序）", "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" } },
+          "names": { "description": "設定檔別的地方沒提到、但有放的名字（例如只放在鑰匙圈）：/key 才列得出來", "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" } },
+          "budget": {
+            "description": "某一把另外的上限（美元），鍵是名字；沒寫就只照全部的 budget",
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "perDayUsd": { "type": "number", "minimum": 0 },
+                "perMonthUsd": { "type": "number", "minimum": 0 }
+              }
+            }
+          }
+        }
+      }
     },
     "capabilities": {
       "description": "覆寫模型的能力，鍵是「廠商:模型」",

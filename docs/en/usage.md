@@ -86,7 +86,8 @@ Instructions hidden in files and web pages (prompt injection) can tell it to do 
 
 | Command | What it does |
 |---|---|
-| `/model [provider:model]` | Switch models; without an argument, pick from the models this key can use (↑↓ to move, Enter to pick, a digit picks directly, Esc cancels). Switching to another provider mid-conversation hands the conversation over as text |
+| `/model [platform:model]` | Switch platforms and models; without an argument, pick a platform, then a model (↑↓ to move, Enter to pick, a digit picks directly, Esc cancels). The choice is saved in the config. See "Switching platforms and models" below |
+| `/key [name]` | When a provider has several keys, switch to another (for this conversation only); without an argument, pick from a list (names and where each is kept, never the contents). See "Several keys for one provider" in config.md |
 | `/effort low…max` | Reasoning effort; only the levels the current model supports are listed |
 | `/undo` | Restore the files `edit` and `write` changed in the last turn; can be repeated (changes made by `bash` cannot be restored) |
 | `/diff` | What `edit` and `write` changed in this session |
@@ -101,6 +102,34 @@ Instructions hidden in files and web pages (prompt injection) can tell it to do 
 | `/tui` | Full-screen mode (default) and classic mode: `/tui fullscreen`, `/tui classic` (saved in the config for next time) |
 | `/language` | The interface language (`/language ui en`, `/language ui zh-TW`, saved in the config) and the language of AI replies for this session (`/language reply …`) |
 
+## Switching platforms and models (/model)
+
+Type `/model` (without an argument) to pick a platform first, then one of its models. There are three kinds of platform: Anthropic, OpenAI, and
+OpenAI-compatible services (local ones such as Ollama, LM Studio, llama.cpp and vLLM; hosted ones such as OpenRouter or Gemini's compatible endpoint).
+The menu shows:
+
+- Whether it is on this computer (`localhost`, `127.0.0.1`, `::1`) or which machine it connects to (the host of its address; an Ollama on another
+  computer in your network counts as another machine)
+- Where its key is kept, or that it has none yet (Anthropic and OpenAI need a key; OpenAI-compatible services may not)
+- Servers found on this computer: opening the menu asks the usual ports on this computer only (Ollama 11434, LM Studio 1234, llama.cpp 8080,
+  vLLM 8000; it waits less than a second), and lists the ones that answer with a model list; one is added to `providers` in the config only if you pick it
+- The last item, "Add an OpenAI-compatible service": a name, an address and a key (optional); it is added to the config only once its model list answers
+
+A platform with no key yet (or a service that refuses requests without one, such as OpenRouter): pick it and paste the key right there.
+Only `•` is shown, and the key never enters the input history or the session log. It is used to list the models once and saved only if that works,
+in the same place as `xj setup` (the keychain or Credential Manager, or a key file only you can read if that fails).
+This does not work when the input is not a terminal (a pipe): use `xj setup`. Nor when that provider is set to use a named key (`keys`):
+put that key where "Several keys for one provider" says.
+
+Before switching to another platform, xj lists its models once: if it cannot be reached or the key is refused, nothing changes and you keep the one
+you had. If the conversation has content, it asks first: the conversation so far (including file contents it read) is handed over as text to that
+platform (the question says which machine), and a long one is first summarized by the current model (one more request). Switching to a platform on
+this computer keeps the conversation on this computer, so it only asks when a summary comes first.
+
+The choice is saved as `defaultModel` in the config (like `/tui`), so xj uses it next time too; if that cannot be written, it says so and the
+switch is for this session only. Typing `/model platform:model` directly (for example `/model ollama:qwen3`) works the same way: a missing key is
+set right there, it checks that the platform answers, asks before sending to another machine, and remembers the choice.
+
 ## Typing while it works
 
 While the model is working, the input line stays open (at the very bottom in full-screen mode; on the status-bar line in classic mode):
@@ -110,6 +139,7 @@ While the model is working, the input line stays open (at the very bottom in ful
 - Use it to add details, correct something or stop it: "skip item 2", "use TypeScript instead", "do not touch the tests yet".
 - Slash commands typed then wait until the turn ends (it never switches models or conversations while the model is halfway through).
 - With an empty input line, Ctrl-C interrupts the turn (if there is text, it clears the text first). Lines not yet handed over when you interrupt are not sent automatically; they are listed so you can send them again.
+- Ctrl-C while xj is still starting up (for example while the sandbox starts) cleans up and exits without waiting for the startup to finish; a question being asked (such as whether to trust the folder) takes Ctrl-C as no.
 - If a permission question pops up while you are halfway through typing, the key you press at that moment does not count as an answer (otherwise a `y` in your sentence would count as yes): pause, read it, then answer.
 
 ## The screen: who is speaking
@@ -158,11 +188,13 @@ git diff | xj -p "Write a one-line commit message for this change"
 
 The reply goes to stdout; tool actions and the cost go to stderr. Anything that would ask you (edits, commands outside the whitelist, new domains) is refused; a folder you have never been asked about counts as untrusted.
 
+With several keys for one provider, `xj -p --key work "…"` uses the work key (without it, the `keys` setting picks); when that key is rejected and the setting is `"ask"`, it never switches (nobody can answer).
+
 What comes in through a pipe is data, not your question: `@path` inside it does not attach files. To attach one, put it in the `-p` question (`git diff | xj -p "check this change against @docs/style.md"`).
 
 ## The status bar
 
-The bottom line: model · effort · mode · sandbox · context (used / summarizing threshold) · to-do (when a to-do list has open items, for example "to-do 2/5: Writing tests") · today's cost · this month's cost (against the limit). While working, it shows the latest progress. When the window is too narrow, items are dropped from the end. Without a sandbox, the whole bar is red.
+The bottom line: model · key (which one is in use when a provider has several; hidden with only one) · effort · mode · sandbox · context (used / summarizing threshold) · to-do (when a to-do list has open items, for example "to-do 2/5: Writing tests") · today's cost · this month's cost (against the limit). While working, it shows the latest progress. When the window is too narrow, items are dropped from the end. Without a sandbox, the whole bar is red.
 Which items and in what order: `statusBar.fields` in the config.
 
 A **`?`** after the context means the model's capabilities could not be found, so conservative defaults are used (32k context, 8k output) —
