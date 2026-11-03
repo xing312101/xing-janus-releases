@@ -2,6 +2,35 @@
 
 Versions follow semver.
 
+## 0.1.2
+
+**Requires**: the same as 0.1.1 — macOS, Linux or Windows; Node 24 or later (on Windows, 24.20.0 or later is recommended); `ripgrep`. On Linux also bubblewrap, socat and sandbox-runtime 0.0.79;
+on Windows, Git for Windows (see `docs/en/install.md`).
+
+**Updating from 0.1.1**: run `xj update` (if you installed with Homebrew, use `brew upgrade xj`). If you are still on 0.1.0, update by hand this once, following the last paragraph of "Update" in `docs/en/install.md`.
+Your config, keys and transcripts stay as they are.
+
+**Verify after downloading** (keep the two files next to the archive):
+
+```bash
+shasum -a 256 -c xj-0.1.2-darwin.tar.gz.sha256
+minisign -Vm xj-0.1.2-darwin.tar.gz -P <your saved copy of the public key>
+```
+
+The Linux files are `xj-0.1.2-linux-x64.tar.gz` or `xj-0.1.2-linux-arm64.tar.gz` (check the SHA-256 with `sha256sum -c`); Windows is `xj-0.1.2-windows.zip`
+(for verifying in PowerShell, see the 0.1.0 section below). If this is your first install, follow `docs/en/install.md`, then run `xj setup`.
+
+Fixed:
+
+- `xj reset`: works after you have saved the public key as `docs/en/install.md` suggests (`~/.xing-janus/minisign.pub`); it used to stop, saying the folder did not look like Xing Janus's.
+  It also recognizes Windows's `acl-fix.json` and temporary files left behind by an interrupted write
+- Security: `id_dsa.pub` is a secret file too (the `.pub` of the other three SSH key types already was)
+- Fetching web pages (`web_fetch`): redirects within the same site are followed up to 5 times, as documented (it used to stop at the 5th)
+- User docs: the quick start now covers installing, switching platforms and updating; the README says how to update; troubleshooting covers the right column going out of line.
+  Configuration, usage, install, privacy and the security notes were checked against the code, fixing what was wrong or missing, for example: `anthropic.fallback` switches models
+  only when the safety classifier blocks a request; hitting the `limits` output cap only warns instead of stopping to ask; adding `"sudo"` to `dangerRemove` also stops asking for `su`, `doas` and the rest;
+  the Homebrew removal order (run `xj reset` first); files and Credential Manager keys the Windows removal steps missed; the `tools` (`"reliable"`/`"unreliable"`) and `parallelToolCalls` settings currently have no effect
+
 ## 0.1.1
 
 **Requires**: the same as 0.1.0 — macOS, Linux or Windows; Node 24 or later; `ripgrep`. On Linux also bubblewrap, socat and sandbox-runtime 0.0.79;

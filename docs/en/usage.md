@@ -18,10 +18,11 @@
 ### Full-auto mode
 
 Start with `xj --auto` (or set `defaultMode` to `"full-auto"` in the config); only then can Shift-Tab reach it. Edits and commands in the sandbox no longer ask first,
-and the sandbox is the safety boundary. It only works in a **trusted folder** with **the sandbox on**: with `--no-sandbox`, without the Windows sandbox installed, or when part of the sandbox cannot block
-(a Windows project too large to finish scanning for secret files), it cannot be entered; xj starts in normal mode and says why.
+and the sandbox is the safety boundary. It only works in a **trusted folder** with **the sandbox on**: without the Windows sandbox installed, or when part of the sandbox cannot block
+(a Windows project too large to finish scanning for secret files; the sandbox account can write to folders on PATH or other places that run outside the sandbox), it cannot be entered; xj starts in normal mode and says why.
+`--auto` together with `--no-sandbox` is an argument error: xj says why and does not start (exit 2). With `defaultMode` set to `"full-auto"` in the config and `--no-sandbox` at startup, xj starts in normal mode and says why.
 
-Still asks: commands on the danger list, new domains, PowerShell commands outside the whitelist (PowerShell strings can build any path or command), MCP calls, and cases where it cannot tell whether a file is a secret
+Still asks: commands on the danger list, new domains, commands that run outside the sandbox (`excludedCommands`, and tools such as flutter that cannot run in the sandbox), PowerShell commands outside the whitelist (PowerShell strings can build any path or command), MCP calls, and cases where it cannot tell whether a file is a secret
 (for example a file with several names). Still always blocked: secret files, and files that later run outside the sandbox (`.git/hooks`, `.vscode/tasks.json`…). The budget limits still apply.
 
 What the sandbox cannot block is up to you:
@@ -31,7 +32,7 @@ What the sandbox cannot block is up to you:
 - **Allowed domains**: programs in the sandbox can send things to domains you already allowed without asking again.
 - **Instructions hidden in files**: if it is led astray, anything not on the danger list happens directly. Only use it on code you trust.
 
-Trusting the folder again (`/trust`) does not bring full-auto back by itself; switch again. `xj -p` only uses full-auto with an explicit `--auto` (the config setting does not count).
+Trusting the folder again (`/trust`) does not bring full-auto back by itself; switch again. `xj -p` only uses full-auto with an explicit `--auto`: when the config's default mode is full-auto or auto-edit, `-p` uses normal mode.
 
 ### Skip-all-permissions mode
 
@@ -42,8 +43,9 @@ Instructions hidden in files and web pages (prompt injection) can tell it to do 
 - **Still always blocked**: secret files named directly (`cat .env`, reading a key file…) and protected files (`.git/hooks`, `.vscode/tasks.json`…). When it cannot tell whether a file is a secret (a file with several names), it still asks.
 - **Indirect reads are not blocked**: without a sandbox, xj only sees the text of the command. `grep -r`, `cat *`, `find -exec cat`, `tar`, PowerShell's `Get-ChildItem | Get-Content`,
   or a program the model writes can all read a `.env` in the folder, and what they read goes to the model service (tested 2026-10-21). **Keep secrets out of this folder.**
-- **Switching to root still asks**: `sudo`, `su`, `doas`, `pkexec` (also inside `env` or `bash -c`), and PowerShell's `-Verb RunAs`, `runas` and `sudo`.
-  To stop `sudo` from asking, add `"sudo"` to `permissions.dangerRemove` in the config (it then is not marked red in normal mode either). This only covers bash's `sudo`: PowerShell's `-Verb RunAs` and `runas` still ask.
+- **Switching to root still asks**: `sudo`, `su`, `doas`, `sudoedit`, `pkexec`, `run0` (also inside `env` or `bash -c`), and PowerShell's `-Verb RunAs`, `runas` and `sudo`.
+  To stop `sudo` from asking, add `"sudo"` to `permissions.dangerRemove` in the config (it then is not marked red in normal mode either): the danger list's `sudo` entry covers all six bash commands above, so `su`, `doas` and the rest stop asking too.
+  It only covers those six: PowerShell's `-Verb RunAs`, `runas` and `sudo` still ask.
 - **It cannot start as root**: `sudo xj --dangerously-skip-permissions`, or the default root user in a container, is refused; use a normal account instead.
   The same goes for a terminal opened with "Run as administrator" on Windows (when xj cannot tell, it assumes it is).
   If you are in a throwaway container and must use root, set the environment variable `XING_JANUS_ALLOW_ROOT_BYPASS=1` and start again.
@@ -82,7 +84,7 @@ Instructions hidden in files and web pages (prompt injection) can tell it to do 
 
 ## Slash commands
 
-`/help` lists them all. The common ones:
+`/help` lists all commands and keys (for the command line, see `xj --help` or `xj -h`). The common ones:
 
 | Command | What it does |
 |---|---|
@@ -94,13 +96,17 @@ Instructions hidden in files and web pages (prompt injection) can tell it to do 
 | `/todo` | Show the model's to-do list again (how far it got); view only, tell it if you want changes |
 | `/compact` | Condense the earlier conversation into a summary (it also happens automatically when the context reaches the threshold) |
 | `/clear`, `/resume` | Start a new conversation; resume an earlier one in this folder |
-| `/checks` | Checks that run automatically after edits (tests, lint); failures go back to the model, up to 3 times |
-| `/image <path>` | Attach an image (you can also drag an image into the terminal, or type `@path` in your message) |
-| `/trust`, `/add-dir` | Trust this folder; add a readable folder for this session |
+| `/checks` | Checks that run automatically after edits (tests, lint); failures go back to the model, up to 3 times. `/checks add <command>` adds one (kept in `~/.xing-janus/checks.json`, per project), `/checks remove <number>` removes one, `/checks off`/`/checks on` skips them for this session/turns them back on, `/checks run` runs them now |
+| `/image <path>` | Attach an image (you can also drag an image into the terminal, or type `@path` in your message); `/image clear` drops images not sent yet |
+| `/trust`, `/trust off`, `/add-dir` | Trust this folder, or stop trusting it (both are remembered for next time); add a readable folder for this session |
 | `/permissions` | Show the permissions in the config (always-allowed whitelist entries, domains, MCP tools); `/permissions remove <number>` removes one, effective in this session too |
 | `/cost` | The cost of this turn, this session, today and this month |
 | `/tui` | Full-screen mode (default) and classic mode: `/tui fullscreen`, `/tui classic` (saved in the config for next time) |
 | `/language` | The interface language (`/language ui en`, `/language ui zh-TW`, saved in the config) and the language of AI replies for this session (`/language reply …`) |
+| `/notify` | The beep (when a turn finishes or xj needs your answer): `/notify on`, `/notify off`, or no argument to flip it; for this session only (the default comes from `notify` in the config) |
+| `/exit` | Quit (pressing Ctrl-C twice with an empty input, or Ctrl-D, quits too) |
+
+Input: Enter sends; type `\` at the end of a line or press Alt-Enter for a new line (pasted multi-line text is kept together). Tab completes slash commands and their arguments (paths for `/image` and `/add-dir`), and ↑ ↓ bring back what you typed before.
 
 ## Switching platforms and models (/model)
 
@@ -159,7 +165,7 @@ AI  ▏    ✓ Created hello.txt (+1 −0 lines)
 ```
 
 - **You**: what you type and your slash commands. **AI**: the model's replies, the tools it uses and their results, and the cost of the turn. **xj**: what Xing Janus itself says (replies to slash commands, permission questions, notices and errors).
-- The model cannot pretend to be xj: the first columns of every line (5 in the English interface, 4 in Chinese) are always drawn by Xing Janus, and the model's text starts after them; the `▏` bar, like the `▍` of questions, cannot be printed by the model's text, file names or command output.
+- The model cannot pretend to be xj: the first columns of every line (5 in the English interface, 4 in Chinese; one more when the terminal draws ambiguous-width characters as two cells, since `▏` then takes two) are always drawn by Xing Janus, and the model's text starts after them; the `▏` bar, like the `▍` of questions, cannot be printed by the model's text, file names or command output.
 
 ## Full-screen mode
 
@@ -170,11 +176,11 @@ Full-screen mode is the default: like vim or htop, Xing Janus draws the whole sc
   Blocks: **green** on, **gray** off, **yellow** on but looser (asks less), **red** needs attention (no sandbox, skip-all-permissions mode). The words say it all; the colors only help (no colors with `NO_COLOR`).
 - **Click** (press and release on the same line): the gray text after each item says what a click does (flip, off, list); for items a click cannot change (sandbox, trusted folder, edits ok when off), the next line says how to change them. Beep and Enter=yes flip on/off (for this session only); mode moves to the next one (like Shift-Tab);
   edits ok is taken back with a click when it is on (a click does not turn it on: press `a` at an edit question); trusted folder and sandbox only say how to change them;
-  checks and always ok list their contents; common commands are filled into the input line (read it, then press Enter). After a click, the bottom line says what changed. Mouse codes inside pasted text do not count as clicks.
+  checks and always ok list their contents; slash commands among the common commands are filled into the input line (read it, then press Enter), while Shift-Tab and Ctrl-C act as if you pressed that key (switch mode, interrupt the turn). After a click, the bottom line says what changed. Mouse codes inside pasted text do not count as clicks.
 - Scrolling: PageUp/PageDown and the mouse wheel. While scrolled up, new output does not pull the view down (the bottom says how many lines you have not seen); sending a new message goes back to the bottom.
 - **Select and copy**: drag in the conversation column to highlight, release to copy to the clipboard (only the conversation text, without the labels on the left or the column on the right; long lines that were wrapped are joined back). A click or any key clears the highlight.
   While the highlight is shown, Ctrl-C copies instead of interrupting (as in Windows Terminal: Ctrl-C copies when there is a selection and interrupts when there is none); if a turn is running, the status line says to press Ctrl-C again to interrupt it.
-  Over SSH, or on Linux without wl-copy/xclip, it is handed to the terminal (OSC 52: supported by iTerm2, tmux and Windows Terminal, not by Terminal.app).
+  Over SSH, or on Linux without wl-copy/xclip/xsel, it is handed to the terminal (OSC 52: supported by iTerm2, tmux and Windows Terminal, not by Terminal.app).
   To use the terminal's own selection: hold Option while dragging in iTerm2, or type `/tui classic` for classic mode.
 - The terminal's own search (Cmd+F) cannot find the conversation inside full-screen mode. When you leave full-screen mode (`/tui classic`, or quitting xj), the whole conversation is printed back to the normal screen, and then search finds it.
 - It cannot start when the output is not a terminal, with `TERM=dumb`, in a window that is too small, or in the old Windows console; classic mode is used instead.
@@ -186,9 +192,11 @@ xj -p "What is this project's test command?"
 git diff | xj -p "Write a one-line commit message for this change"
 ```
 
-The reply goes to stdout; tool actions and the cost go to stderr. Anything that would ask you (edits, commands outside the whitelist, new domains) is refused; a folder you have never been asked about counts as untrusted.
+The reply goes to stdout; tool actions and the cost go to stderr (`-p` can also be written `--print`). Anything that would ask you (edits, commands outside the whitelist, new domains) is refused; a folder you have never been asked about counts as untrusted.
+When the config's default mode is auto-edit or full-auto, `-p` uses normal mode (edits ask, so they are refused); for full-auto, add `--auto` explicitly.
+Before the first use, run xj once in a terminal and accept the notice: until then, `xj -p` exits right away (exit 2).
 
-With several keys for one provider, `xj -p --key work "…"` uses the work key (without it, the `keys` setting picks); when that key is rejected and the setting is `"ask"`, it never switches (nobody can answer).
+With several keys for one provider, `xj -p --key work "…"` uses the work key (without it, the `keys` setting picks); when that key is rejected and `keys.<provider>.onReject` is `"ask"`, it never switches (nobody can answer).
 
 What comes in through a pipe is data, not your question: `@path` inside it does not attach files. To attach one, put it in the `-p` question (`git diff | xj -p "check this change against @docs/style.md"`).
 
@@ -276,12 +284,12 @@ There are limits per turn, per day and per month (`budget` in the config; by def
 ## Project rules, skills, MCP
 
 - **AGENTS.md** (CLAUDE.md is read too): rules for coding agents, such as the test command or code style. Only read in trusted folders.
-- **Skills**: `~/.xing-janus/skills/<name>/SKILL.md`, or `.agents/skills/` in the project. Normally only the name and description are given to the model, and the content is read when needed.
+- **Skills**: `~/.xing-janus/skills/<name>/SKILL.md`, or `.agents/skills/` and `.claude/skills/` in the project (project skills are only read in trusted folders; on a name clash, yours wins). Normally only the name and description are given to the model, and the content is read when needed.
 - **MCP servers**: only the ones listed in the config; they run in the sandbox by default, and every call asks (except those listed in `autoApprove` in the config).
 
 ## Flutter projects
 
-Nothing to set up. With the sandbox on, `flutter` and `dart` cannot run inside it: the model asks to run that one command outside the sandbox and you are asked every time ("Tools that cannot run in the sandbox" in config.md), using your own environment (`JAVA_HOME` and `ANDROID_HOME` are passed through by default); for the same reason the sandbox no longer opens the Flutter SDK or the Pub cache, so it starts faster. Without the sandbox the usual rules apply.
+Nothing to set up. With the sandbox on, `flutter` and `dart` cannot run inside it: the model asks to run that one command outside the sandbox and you are asked every time ("Tools that cannot run in the sandbox" in config.md), using your own environment (`JAVA_HOME` and `ANDROID_HOME` are passed through by default); for the same reason the Windows sandbox no longer opens the Flutter SDK or the Pub cache, so it starts faster. Without the sandbox the usual rules apply.
 
 ## Language
 

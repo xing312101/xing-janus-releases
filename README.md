@@ -34,6 +34,8 @@ xj
 換平台、換模型：在 xj 裡打 `/model`，先選平台、再選模型。這台的本機伺服器（Ollama、LM Studio…）會自己找出來，也能新增 OpenAI 相容的服務；
 還沒設金鑰的當場貼上（畫面上只顯示 •）。換了就記住，下次開 xj 也用它（見 [使用說明](docs/usage.md) 的「換平台、換模型」）。
 
+更新：打 `xj update`（Homebrew 裝的用 `brew upgrade xj`），只裝比現在新的版本，驗過 SHA-256 和簽章才換上（見 [install.md](docs/install.md) 的「更新」）。
+
 - [快速開始](docs/quickstart.md)：從拿到 API key 到第一次改檔
 - [使用說明](docs/usage.md)：模式、權限詢問、斜線指令、狀態列、花費
 - [設定檔](docs/config.md)、[疑難排解](docs/troubleshooting.md)

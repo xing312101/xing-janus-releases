@@ -35,6 +35,8 @@ Switching platforms and models: type `/model` inside xj to pick a platform, then
 for you, and you can add an OpenAI-compatible service; a missing key is pasted right there (only • is shown). The choice is remembered for next time
 (see "Switching platforms and models" in [Usage](docs/en/usage.md)).
 
+Updating: type `xj update` (if you installed with Homebrew, use `brew upgrade xj`). It only installs a newer version, and only after the SHA-256 and the signature check out (see "Update" in [install.md](docs/en/install.md)).
+
 - [Quick start](docs/en/quickstart.md): from getting an API key to your first edit
 - [Usage](docs/en/usage.md): modes, permission questions, slash commands, the status bar, cost
 - [The config file](docs/en/config.md), [Troubleshooting](docs/en/troubleshooting.md)

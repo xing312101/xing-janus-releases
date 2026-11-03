@@ -12,20 +12,28 @@
 
 ## Where it is stored
 
-Everything is in `~/.xing-janus/` (folder permissions 700, file permissions 600):
+Everything is in `~/.xing-janus/` (or in the folder the environment variable `XING_JANUS_HOME` names, if set; folder permissions 700, file permissions 600):
 
 | File | Contents | Kept |
 |---|---|---|
 | `config.json`, `prices.json`, `checks.json` | Settings, price table, checks after edits | Always |
 | `trusted.json`, `accepted.json` | Trusted folders, the notice you accepted | Always |
 | `spend.jsonl` | The cost of each request (no content) | Always |
+| `keys/` | Key files: keys that `xj setup` or `/model` could not store in the keychain or Credential Manager (Linux and WSL have no keychain) | Always |
+| `skills/` | Your own skills | Always |
+| `models-*.json` | The cached model list of each provider (of each key, when a provider has several) | Always (looked up again after a day) |
+| `acl-fix.json` | Windows: which places on PATH the sandbox account can write to, and what to block (see "Skip-all-permissions mode" in usage.md) | Updated at every sandbox start |
 | `sessions/` | Session logs (keys masked), the full run of each subagent (`subagents/`, keys masked), snapshots before edits (unchanged, for `/undo`), full outputs, images you attached, `--debug` logs | 30 days (`sessions.retentionDays`) |
 
 Session logs contain the file contents it read, so do not put `~/.xing-janus/` in a folder that syncs to the cloud (`xj doctor` checks this).
 
+Next to it, `~/.xing-janus-cache/` (with `XING_JANUS_HOME` set, that path plus `-cache`) is for commands in the sandbox: the npm cache and the git config used in the sandbox. The sandbox can write there, so no keys or logs are kept in it.
+Windows also has `%LOCALAPPDATA%\xing-janus\`: a record of the permissions added to parent folders when the sandbox starts (used to take them back; see "Windows" in troubleshooting.md).
+
 ## How to delete it
 
 - Old session logs: `xj sessions prune`
-- Everything: `xj reset` (lists what will go and asks first)
+- Everything: `xj reset` (lists what will go and asks first; `~/.xing-janus-cache/` goes too)
 - The key in the keychain: `security delete-generic-password -s xing-janus-<provider>`
 - The key in Windows Credential Manager: `cmdkey /delete:xing-janus-<provider>`
+- With several keys for one provider, the named ones are separate items (`xing-janus-<provider>--<name>`): the two lines above do not delete them, so delete each one by its name

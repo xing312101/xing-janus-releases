@@ -17,6 +17,7 @@
 ### Windows
 
 - **Node 24 以上**：從 nodejs.org 下載安裝程式，裝在整台電腦（預設的 `C:\Program Files\nodejs`）。
+  建議用 24.20.0 以上：更舊的 Node 在 Windows 上被強制結束時偶爾會當掉，`xj doctor` 會提醒。
   用 nvm-windows 也可以；沙盒的帳號讀得到它的資料夾（xj 會開放）。
 - **Git for Windows**（附 Git Bash）：https://git-scm.com/download/win 。bash 工具用它跑指令，權限判斷跟 macOS、Linux 一樣；
   沒裝的話只剩 powershell 工具，而 PowerShell 只有白名單裡的唯讀寫法（`Get-ChildItem`、`Get-Content`…）不用問，其他的每個都要問。
@@ -117,7 +118,7 @@ formula 由 tap 自己的 workflow 照這個發佈頁面最新的版本更新：
    其他的 shell 照它自己的方式把 `~/.local/bin` 加進 PATH。新的視窗裡 `xj --version` 印得出版本就好了。
 
 4. Linux：照上面的「Linux 的沙盒」裝 sandbox-runtime。
-5. 跑 `xj doctor`，每一項都是 ✓ 或 －（不用的功能）就好了。
+5. 跑 `xj doctor`，每一項都是 ✓ 或 -（不用的功能）就好了。
 
 壓縮檔裡已經有打包好的程式（`xj.mjs`）和它需要的東西，不用 `npm install`，也不會執行任何套件的安裝腳本。
 
@@ -165,9 +166,9 @@ formula 由 tap 自己的 workflow 照這個發佈頁面最新的版本更新：
 
 用 Homebrew 裝的：`brew upgrade xj`。
 
-手動裝的（macOS、Linux、Windows）：`xj update`。`xj update --check` 只看有沒有新版、不下載。v0.1.0 還沒有 `xj update`：從 v0.1.0 要照下面最後一段手動更新一次。
+手動裝的（macOS、Linux、Windows）：`xj update`（打 `xj upgrade` 也一樣）。`xj update --check` 只看有沒有新版、不下載。v0.1.0 還沒有 `xj update`：從 v0.1.0 要照下面最後一段手動更新一次。
 
-- Xing Janus 不會自己連網路檢查更新（它平常對外的連線只有模型的 API）：你打 `xj update` 才連，只連 GitHub（查 releases 頁面最新的版本、下載那一版的檔案）。
+- Xing Janus 不會自己連網路檢查更新（它平常對外的連線只有模型的 API 和你允許的網域）：你打 `xj update` 才連，只連 GitHub（查 releases 頁面最新的版本、下載那一版的檔案）。
   要經過 proxy 的話，設 `NODE_USE_ENV_PROXY=1` 和 `HTTPS_PROXY`。
 - 只裝比現在新的版本；下載之後先驗 SHA-256 和簽章（用這一版裡內建的公鑰，不從網路拿），簽章的附註也要是那一版、那個檔，都過了才換上。
   你照上面第 2 步自己留了公鑰（`~/.xing-janus/minisign.pub`）的話，它要跟內建的是同一把，不一樣就停下來（可能換了金鑰，也可能檔案被換過：先看 README 和 CHANGELOG）。
@@ -180,21 +181,26 @@ Windows：先關掉正在跑的 xj，照「Windows 的安裝」的第 3 步再�
 
 ## 移除
 
-用 Homebrew 裝的：`brew uninstall xj`、`brew untap xing312101/xing-janus`，再照下面刪掉 `~/.xing-janus` 和鑰匙圈裡的金鑰。
+用 Homebrew 裝的：先跑下面的 `xj reset`（`brew uninstall` 之後就沒有 `xj` 可以跑了），再 `brew uninstall xj`、`brew untap xing312101/xing-janus`（代替下面刪掉程式的那一行），最後刪掉鑰匙圈裡的金鑰。
 
 ```bash
-xj reset                                           # 刪掉 ~/.xing-janus（會先列出來、問過再刪）
+xj reset                                           # 刪掉 ~/.xing-janus 和 ~/.xing-janus-cache（會先列出來、問過再刪）
 rm ~/.local/bin/xj && rm -r ~/.local/share/xj-*    # 刪掉程式
 security delete-generic-password -s xing-janus-anthropic   # 鑰匙圈裡的金鑰（openai 等也一樣）
 ```
 
-Windows：`xj reset` 之後，在一般權限的 PowerShell 裡刪掉程式的資料夾、從 PATH 拿掉它（PATH 是你自己帳號的，不要用系統管理員權限跑）：
+同一家好幾把 key 的話，有名字的那幾把在鑰匙圈（Windows 是認證管理員）裡是另外的項目（`xing-janus-<廠商>--<名字>`，例如 `xing-janus-anthropic--work`），要各刪一次。
+
+Windows：`xj reset` 之後，在一般權限的 PowerShell 裡刪掉程式的資料夾（連同 `xj update` 留下的舊版 `xj.old` 和紀錄 `xj-update.log`）、
+xj 記沙盒權限用的 `%LOCALAPPDATA%\xing-janus`，從 PATH 拿掉程式的資料夾，再刪掉認證管理員裡的金鑰（PATH 是你自己帳號的，不要用系統管理員權限跑）：
 
 ```powershell
 $dir = "$env:LOCALAPPDATA\Programs\xj"
 Remove-Item -Recurse -Force $dir
+Remove-Item -Recurse -Force "$dir.old", "$dir.update", "$env:LOCALAPPDATA\Programs\xj-update.log", "$env:LOCALAPPDATA\xing-janus" -ErrorAction SilentlyContinue
 $path = [Environment]::GetEnvironmentVariable('Path', 'User')
 [Environment]::SetEnvironmentVariable('Path', (($path -split ';') | Where-Object { $_ -and $_ -ne $dir }) -join ';', 'User')
+cmdkey /delete:xing-janus-anthropic     # 認證管理員裡的金鑰（openai 等、有名字的那幾把也是各刪一次）
 ```
 
 裝過沙盒的話，再在系統管理員權限的 PowerShell 裡：

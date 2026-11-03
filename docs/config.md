@@ -1,26 +1,26 @@
 # 設定檔
 
 位置：`~/.xing-janus/config.json`。完整的格式在 [`config.schema.json`](config.schema.json)，`xj doctor` 會照它檢查。
-**每一項都有預設值，什麼都不寫也能用**：設定檔只要寫你想改的那幾項（`xj setup` 會寫上預設的模型、回覆的語言、提示音）。下表的「預設」就是沒寫的時候用的值，或 xj 自己怎麼決定。
-`xj setup` 會在設定檔開頭寫上 `"$schema"`：用 VS Code 這類編輯器打開，會自動補完、顯示每一欄的說明、打錯當場標出來。
-詢問時選「永久允許」會寫進 `permissions.allow`、`sandbox.allowedDomains`、MCP server 的 `autoApprove`（只改那一欄，寫之前整份檢查過；設定檔本身有錯就不寫）；用 `/permissions` 看、拿掉。
+**每一項都有預設值，什麼都不寫也能用**：設定檔只要寫你想改的那幾項（`xj setup` 會寫上預設的模型、介面和回覆的語言、提示音）。下表的「預設」就是沒寫的時候用的值，或 xj 自己怎麼決定。
+`xj setup` 會在設定檔裡寫上 `"$schema"`：用 VS Code 這類編輯器打開，會自動補完、顯示每一欄的說明、打錯當場標出來。
+詢問時選「永久允許」會寫進 `permissions.allow`、`sandbox.allowedDomains`、MCP server 的 `autoApprove`，Windows 開沙盒時問的那兩題寫進 `sandbox.autoFixWritable`、`sandbox.writablePrograms`（只改那一欄，寫之前整份檢查過；設定檔本身有錯就不寫）；用 `/permissions` 看、拿掉。
 
 | 欄位 | 預設 | 說明 |
 |---|---|---|
 | `version` | `1` | 設定檔格式的版本：xj 自己寫，格式改了會自動轉換，不用自己改 |
 | `defaultModel` | `anthropic:claude-opus-5-5` | 預設的廠商和模型。寫系列名稱（`anthropic:opus`）就自動用最新的。`xj setup` 會照你選的那一家改寫這一項，`/model` 換了也會改寫 |
 | `effort` | `{ "default": "high" }` | 每個模型的預設推理強度，鍵是模型 ID、系列名稱或 `default`。模型不支援那個等級的話用模型自己的預設；不支援推理強度的模型不送 |
-| `defaultMode` | `normal` | `normal`、`auto-edit`、`full-auto`（全自動，等於每次都加 `--auto`，見 usage.md；`xj -p` 不吃這個，要明確加 `--auto`）、`plan`、`read-only`。全部不問不能設成預設：每次都要加 `--dangerously-skip-permissions` |
+| `defaultMode` | `normal` | `normal`、`auto-edit`、`full-auto`（全自動，等於每次都加 `--auto`，見 usage.md）、`plan`、`read-only`。`xj -p` 不吃 `auto-edit`、`full-auto`（用一般模式），全自動要明確加 `--auto`。全部不問不能設成預設：每次都要加 `--dangerously-skip-permissions` |
 | `uiLanguage` | 照系統的語言 | 介面的語言：`zh-TW` 或 `en`。沒寫的話看環境變數 `LC_ALL`、`LC_MESSAGES`、`LANG` 第一個有設的（`C`、`POSIX` 不算），都沒設就照作業系統的地區設定：`zh` 開頭的用繁體中文，其他用英文。第一次啟動時問（照這個預先選好），`/language ui` 會改它 |
-| `language` | 跟介面一樣（`繁體中文` 或 `English`） | AI 回覆的語言 |
+| `language` | 跟介面一樣（中文介面是 `繁體中文`、英文介面是 `English`） | AI 回覆的語言，照你平常的寫法寫（例如 `English`、`Deutsch`） |
 | `notify` | `false` | 一輪跑完、要問你的時候響一聲 |
 | `screen` | `fullscreen` | 畫面：`fullscreen` 是全螢幕模式（寬的視窗右邊放待辦清單和目前的狀態，PageUp／PageDown 和滾輪捲動）；`classic` 是一般模式（終端機自己捲動、搜尋、選取複製）。全螢幕開不了的時候（輸出不是終端機、舊的 Windows 主控台）自動用一般模式。`/tui` 切換時會寫進來 |
 | `enterToApprove` | `true` | 詢問時按 Enter 就是「是」（預設開，跟 Claude Code 一樣；寫 `false` 就一律要按 y）（網域的詢問是「允許一次」）。危險的指令、還沒看完的內容、永久允許的確認照樣要按 `y`；詢問剛出現的 0.5 秒內的 Enter 不算（可能是你剛好在按）。信任資料夾的問題不能用 Enter |
 | `statusBar.fields` | `model`、`key`、`effort`、`mode`、`sandbox`、`context`、`todo`、`day-cost`、`month-cost`、`progress` | 狀態列顯示哪些欄位，照重要程度排：視窗太窄時從最後面開始省略。另外有 `session-cost`（這次對話的花費）。`todo` 是待辦清單（沒有清單、或全部完成時不佔位置；2026-10-22 加的，之前就自己寫了這一項的，要自己加上 `todo` 才看得到）。`key` 是同一家好幾把 key 的話現在用哪一把（只有一把的話不佔位置；2026-10-29 加的，自己寫了這一項的一樣要自己加） |
-| `budget` | 每輪 $5、每天 $30、每月 $100、帳單週期從 1 號開始 | 到 80% 提醒、到 100% 停下來問。上限是拿**預估**的花費來比的（本機價格表 × 用量），不是服務商的帳單；填 0 等於關掉那一項。`xj setup` 不會問你這個 |
-| `limits` | 每輪 50 次工具呼叫、輸出 64000 token | 碰到上限就停下來問 |
+| `budget` | 每輪 $5、每天 $30、每月 $100、帳單週期從 1 號開始 | `perTurnUsd`、`perDayUsd`、`perMonthUsd`（美元），`cycleStartDay`（帳單週期從每月幾號開始，1～28）。到 80% 提醒、到 100% 停下來問。上限是拿**預估**的花費來比的（本機價格表 × 用量），不是服務商的帳單；填 0 等於關掉那一項。`xj setup` 不會問你這個 |
+| `limits` | 每輪 50 次工具呼叫、每次請求最多輸出 64000 token | `toolCallsPerTurn`：每輪最多幾次工具呼叫，碰到就停下來問你。`maxOutputTokens`（至少 1024）：每次請求的輸出上限，不會超過模型自己的上限；碰到它不會停下來問（回覆被截斷時提醒一聲，被截斷的工具呼叫不執行） |
 | `permissions` | 每一項都是空的（內建的白名單、危險清單、機密檔照樣生效） | **內建的一直都在**（有哪些見下面「內建的白名單、危險清單、機密檔」），這裡只寫你要增減的：`allow`／`allowRemove`（白名單）、`danger`／`dangerRemove`（危險清單，拿掉的寫名稱）、`secretFiles`／`secretFilesRemove`（機密檔）。`extraReadable`：工作目錄以外也讓它讀的資料夾（家目錄本身、放憑證的資料夾像 `~/.ssh`、`~/.aws`，和包含它們的上層，都不採用，開場會講）。沒有要放寬或收緊的話不用寫 |
-| `sandbox.toolchainReadable` | `~/.gitconfig`、`~/.config/git`、`~/.cargo`、`~/.rustup`、`~/.pyenv`、`~/.nvm`、`~/.volta`、`~/development/flutter`、`~/fvm`、`~/.pub-cache`、`~/.gradle`、`~/.android`、`~/Library/Android/sdk`（不存在的略過） | 沙盒裡的指令讀得到的工具鏈（工作目錄以外；家目錄的其他地方讀不到）。Windows（2026-10-21）：開放一個資料夾要逐檔改權限，所以用預設值的時候照專案的種類開（有 `package.json` 才開 npm 全域、有 `build.gradle` 這類 Gradle 檔才開 Android SDK 和 `~/.gradle`…；Flutter 專案（`pubspec.yaml`）不開 Flutter SDK、Pub cache，它底下的 `android/` 也不算 —— flutter、dart 一律在沙盒外跑，開了只會讓開沙盒多等），大的工具鏈只開用得到的部分；自己寫了這一項或 `writable` 的話照你寫的開，xj 不再自己加 |
+| `sandbox.toolchainReadable` | `~/.gitconfig`、`~/.config/git`、`~/.cargo`、`~/.rustup`、`~/.pyenv`、`~/.nvm`、`~/.volta`、`~/development/flutter`、`~/fvm`、`~/.pub-cache`、`~/.gradle`、`~/.android`、`~/Library/Android/sdk`（不存在的略過） | 沙盒裡的指令讀得到的工具鏈（工作目錄以外；家目錄的其他地方讀不到）。`~/.gitconfig`、`~/.config/git` 只有 `sandbox.gitconfig` 是 `"full"` 時才開（預設的 `"filtered"` 給沙盒的是過濾過的那一份）。Windows（2026-10-21）：開放一個資料夾要逐檔改權限，所以用預設值的時候照專案的種類開（有 `package.json` 才開 npm 全域、有 `build.gradle` 這類 Gradle 檔才開 Android SDK 和 `~/.gradle`…；還看不出是哪種專案時（全新的空資料夾），Node、Python 的照開；Flutter 專案（`pubspec.yaml`）不開 Flutter SDK、Pub cache，它底下的 `android/` 也不算 —— flutter、dart 一律在沙盒外跑，開了只會讓開沙盒多等），大的工具鏈只開用得到的部分；自己寫了這一項或 `writable` 的話照你寫的開，xj 不再自己加 |
 | `sandbox.writable` | `~/.pub-cache`、`~/.gradle` | 沙盒裡的指令寫得到的地方（工作目錄和暫存資料夾一定寫得到，不用寫） |
 | `sandbox.allowedDomains` | 空的 | 沙盒裡的指令不用問就能連的網域。空的就是每連一個新的網域都先問你（允許一次、這次對話、永久允許；選永久允許就寫進這裡） |
 | `sandbox.allowLocalBinding` | `false` | 讓沙盒裡的指令聽本機的連接埠（Flutter、Gradle 這類要的話設成 `true`）。**macOS 上同時放行連到這台電腦的每一個本機連接埠**（Ollama、資料庫、Docker 這類只聽本機的服務），不經過網域的詢問；需要的時候才開 |
@@ -34,11 +34,11 @@
 | `keyFiles` | 空的（照環境變數 → 鑰匙圈或認證管理員找） | 沒有鑰匙圈的環境：廠商 → 金鑰檔。路徑要是絕對路徑或 `~` 開頭（Windows 要有磁碟代號，例如 `C:\keys\anthropic.txt`）：相對路徑會從工作目錄讀，設定檔不收。這些路徑自動算成機密檔。同一家好幾把的話鍵寫成「廠商:名字」（例如 `anthropic:work`） |
 | `keys` | 空的（每一家一把） | 同一家好幾把 key：這個資料夾用哪一把、被拒時怎麼辦、某一把另外的上限。見下面「同一家好幾把 key」 |
 | `providers` | 內建 `openai`（`https://api.openai.com/v1`）、`ollama`（`http://localhost:11434/v1`） | 改 `baseURL`、用 `enabled: false` 關掉，或加自己的服務（`kind: "chat-completions"`、`baseURL`、`keyName`）。OpenAI 找不到金鑰就不接；自己的服務沒有金鑰也接（本機的服務常常不用）；Ollama 不用金鑰 |
-| `capabilities` | 空的（照各家的模型清單查到的；查不到的用保守的預設：上下文 32k、輸出 8k，狀態列標 `?`） | 覆寫模型的能力（上下文、最大輸出、工具組…），鍵是「廠商:模型」。`todoTool`：給不給這個模型待辦清單的工具（`todo_write`）；`webFetch`：給不給抓網頁的工具（`web_fetch`）。預設每個模型都給，不想讓某個模型用就寫 `false`。`subagents`：給不給子代理的工具（`agent`），預設也給，不想讓某個模型用就寫 `false` |
+| `capabilities` | 空的（照各家的模型清單查到的；查不到的用保守的預設：上下文 32k、輸出 8k，狀態列標 `?`） | 覆寫模型的能力（上下文、最大輸出、工具組…），鍵是「廠商:模型」：`contextTokens`、`maxOutputTokens`、`compactAtTokens`（上下文到多少 token 就自動摘要；沒寫的話是 15 萬，但不超過上下文的 80%）、`imageInput`（收不收圖片）、`tools`（`"none"` 是不送工具；`"reliable"`、`"unreliable"` 目前沒有差別；Anthropic 的模型不看這一項）、`parallelToolCalls`（目前沒有作用）、`toolset`（`"full"`，或 `"reduced"`：只給 read、search、edit）。`todoTool`：給不給這個模型待辦清單的工具（`todo_write`）；`webFetch`：給不給抓網頁的工具（`web_fetch`）。預設每個模型都給，不想讓某個模型用就寫 `false`。`subagents`：給不給子代理的工具（`agent`），預設也給，不想讓某個模型用就寫 `false` |
 | `subagents` | 同時 4 個、30 個工具呼叫、10 分鐘 | 子代理（見 usage.md 的「子代理」）：`maxConcurrent` 同時跑幾個（只有唯讀的 explore 會同時跑）、`maxToolCalls`、`timeoutMinutes` 每個的上限（到了就叫它交報告）、`model` 預設用的模型（沒寫跟主對話同一個） |
-| `mcp.servers` | 空的（不接任何 MCP server） | MCP server：`command`、`args`、`env`、`description`、`sandbox`、`autoApprove`、`readOnly`。`env` 裡名稱看起來就是金鑰的（結尾是 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 這些），值會被當成金鑰：server 的輸出、錯誤訊息、對話紀錄裡出現就遮掉。Windows 的沙盒現在跑不了 MCP server（stdin 接不進去）：沙盒開著的話要設 `sandbox: false`（在沙盒外、以你的權限跑） |
-| `anthropic` | `fallback: default`、`prefixMismatch: drop_block` | Anthropic 專用的設定。`fallback`：`"default"` 是模型忙不過來時讓 Anthropic 的伺服器改用備援的模型回答（狀態列標「→ 實際回答的模型」，花費照它的價格算），`"off"` 是不用。`prefixMismatch`：前面的對話改過（例如摘要之後）、跟模型的推理內容對不上時，`"drop_block"` 是丟掉那一段推理照常送，`"error"` 是直接報錯（測試用） |
-| `evals.budgetUsd` | `2` | 每次評測最多花多少（美元） |
+| `mcp.servers` | 空的（不接任何 MCP server） | MCP server：`command`、`args`、`env`、`description`、`sandbox`、`autoApprove`、`readOnly`、`timeoutSec`（一次呼叫最多等幾秒，預設 600）。`env` 裡名稱看起來就是金鑰的（結尾是 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 這些），值會被當成金鑰：server 的輸出、錯誤訊息、對話紀錄裡出現就遮掉。Windows 的沙盒現在跑不了 MCP server（stdin 接不進去）：沙盒開著的話要設 `sandbox: false`（在沙盒外、以你的權限跑） |
+| `anthropic` | `fallback: default`、`prefixMismatch: drop_block` | Anthropic 專用的設定。`fallback`：`"default"` 是請求被安全分類器擋下時，讓 Anthropic 的伺服器換一個模型再試、改由它回答（狀態列標「→ 實際回答的模型」，花費照它的價格算），`"off"` 是不換、不再試。`prefixMismatch`：前面的對話改過（例如摘要之後）、跟模型的推理內容對不上時，`"drop_block"` 是丟掉那一段推理照常送，`"error"` 是直接報錯（測試用） |
+| `evals.budgetUsd` | `2` | 開發用：每次評測最多花多少（美元）。評測（`node evals/run.ts`）只在原始碼的 repo 裡，發佈的版本沒有 |
 | `sessions.retentionDays` | `30` | 對話紀錄保留幾天：每次啟動自動清掉更舊的（`xj sessions prune` 也能手動清） |
 
 ## 內建的白名單、危險清單、機密檔
@@ -63,7 +63,7 @@
   | `publish` | 發佈套件 |
   | `remote-shell` | 連到別的機器（`ssh`、`scp`、`rsync`、`sftp`） |
   | `upload` | 往外送資料（`curl`／`wget` 上傳） |
-  | `sudo` | 切換成 root 執行（`sudo`、`su`） |
+  | `sudo` | 切換成 root 執行（`sudo`、`su`、`doas`、`sudoedit`、`pkexec`、`run0`） |
   | `chmod-chown-recursive` | 大範圍改權限（`chmod`／`chown -R`） |
   | `disk` | 直接寫磁碟（`mkfs`、`dd`） |
   | `power` | 關機或重開機 |
@@ -98,7 +98,7 @@ xj 就問你一次（標紅寫「在沙盒外用你的權限跑」和實際跑�
 - **原則上不用系統管理員權限**：要的話，模型把完整的指令給你，你在系統管理員的終端機自己跑。你在對話裡明確說「可以直接跑」時，模型才會要求用系統管理員權限跑
   （只有 `winget install`）：xj 照樣問你（標紅），Windows 還會跳 UAC 讓你按；全部不問模式也一樣問。
 - 裝好之後要**重開 xj**：PATH 和沙盒讀得到的範圍都是啟動時算的，新裝的指令要重開才找得到。
-- winget 裝在你帳號底下的（`--scope user`）沙盒讀得到：xj 一律把 `%LOCALAPPDATA%\Microsoft\WinGet\Packages`、`Links` 開放給沙盒讀（跟 Scoop 一樣）。
+- winget 裝在你帳號底下的（`--scope user`）沙盒讀得到：`sandbox.toolchainReadable` 用預設值的時候，xj 把 `%LOCALAPPDATA%\Microsoft\WinGet\Packages`、`Links` 開放給沙盒讀（跟 Scoop 一樣；自己寫了這一項的話，要自己列進去）。
   **用系統管理員權限裝到整台電腦的，沙盒裡用不了**：winget 給那些檔案的權限沒有一般使用者，沙盒用另一個帳號跑（2026-10-28 實測）。沙盒外照常可以用；要在沙盒裡用就裝成 `--scope user`。
 - 不想要這個選項：設定檔寫 `"sandbox": { "allowUnsandboxedCommands": false }`，這些指令就一律拒絕；要用的話用 `xj --no-sandbox` 重開，或列進 `excludedCommands`。
 - 自己列進 `excludedCommands` 的照原本的做法（問、在沙盒外跑），不用模型要求。
@@ -121,7 +121,7 @@ xj 就問你一次（標紅寫「在沙盒外用你的權限跑」和實際跑�
 - Docker 會照專案裡的 `Dockerfile`、`docker-compose.yml` 做事，而這些檔案沙盒裡的指令改得到：按「是」之前先看過 `git diff`。
 - 要連遠端的 Docker（`DOCKER_HOST`），把變數加進 `env.passthrough`。
 
-全部不問模式（`--dangerously-skip-permissions`）用 root 跑的時候預設開不了；在可以整個丟掉的容器裡、又一定要用 root，
+全部不問模式（`--dangerously-skip-permissions`）用 root 跑的時候預設開不了（Windows 上「以系統管理員身分執行」的終端機也一樣）；在可以整個丟掉的容器、虛擬機裡，又一定要用 root（系統管理員）的話，
 設環境變數 `XING_JANUS_ALLOW_ROOT_BYPASS=1`（只認 `1`）。這個變數跟其他 `XING_JANUS_` 開頭的一樣，不會傳給它跑的指令。
 
 金鑰不寫在設定檔裡：放鑰匙圈（`xing-janus-<廠商>`）、環境變數 `XING_JANUS_<廠商>_API_KEY`，或 `keyFiles` 指的檔案。不要用 `ANTHROPIC_API_KEY`、`OPENAI_API_KEY` 這類通用的名稱：其他工具也會讀它們。
@@ -160,12 +160,14 @@ xj 就問你一次（標紅寫「在沙盒外用你的權限跑」和實際跑�
 - **花費**：照「廠商＋名字」分開記，`/cost` 分開列。`budget` 照舊算全部；`keys.<廠商>.budget` 可以替某一把另外設每天（`perDayUsd`）、每月（`perMonthUsd`）的上限，到了一樣先提醒、再停下來問。
 - **被拒時**（額度用完、key 失效、重試之後還是被限流）：`onReject` 是 `"ask"`（預設：問你要不要換成下一把、接著做這一輪）、`"auto"`（直接換、講一聲）、`"off"`（停下來，你自己 `/key` 換）。只會換到**這個資料夾也能用的**那幾把：`byFolder` 對到這個資料夾的，加上 `failover` 列的（照順序）——不會為了繼續做就換到別的帳單。只換這次對話；`xj -p` 沒有人能回答，`"ask"` 一律不換。
 - 設成 `"auto"` 之前先想兩件事：被限流時自動輪流用好幾把 key 繞過上限，**可能違反服務商的條款**（請先看各家的條款）；換過去之後，花費記在那一把的帳上。`xj doctor` 也會提醒。
-- 子代理用跟主對話同一把。`xj -p` 和評測（`node evals/run.ts --key work`）也能加 `--key`。`xj doctor` 每一把各一列（在不在、放在哪裡、連不連得上）。
+- 子代理用跟主對話同一把。`xj -p` 和評測（開發用，`node evals/run.ts --key work`）也能加 `--key`。`xj doctor` 每一把各一列（在不在、放在哪裡、連不連得上）。
 
 ## 接別的模型服務
 
 只要是 OpenAI 相容的 API，加一個 `providers` 就能用，不用改程式。金鑰放環境變數
-`XING_JANUS_<名稱大寫>_API_KEY`，或用 `xj setup` 存進鑰匙圈（項目名是 `xing-janus-<名稱>`）。
+`XING_JANUS_<名稱大寫>_API_KEY`、鑰匙圈或認證管理員（項目名是 `xing-janus-<名稱>`），或 `keyFiles` 指的檔案。
+`xj setup` 只問 Anthropic、OpenAI、Ollama：自己的服務的金鑰在 xj 裡當場設（`/model` 選它、或新增它的時候貼上），
+或自己存（macOS：`security add-generic-password -s xing-janus-<名稱> -a "$USER" -w`；Windows：`cmdkey /generic:xing-janus-<名稱> /user:xj /pass`）。
 也可以在 xj 裡加：`/model` 選單的最後一項「新增一個 OpenAI 相容的服務」，或選「這台找到的」本機伺服器（usage.md 的「換平台、換模型」）。
 查得到模型清單才寫進這裡的 `providers`（只寫 `kind` 和 `baseURL`）；金鑰當場設的話，存法跟 `xj setup` 一樣。
 
@@ -178,7 +180,7 @@ xj 就問你一次（標紅寫「在沙盒外用你的權限跑」和實際跑�
   },
   "capabilities": {
     "openrouter:anthropic/claude-sonnet-4.5": { "contextTokens": 200000, "maxOutputTokens": 32000 },
-    "local:你的模型id": { "contextTokens": 65536, "maxOutputTokens": 8192, "tools": "unreliable", "toolset": "reduced", "parallelToolCalls": false }
+    "local:你的模型id": { "contextTokens": 65536, "maxOutputTokens": 8192, "toolset": "reduced" }
   },
   "defaultModel": "openrouter:anthropic/claude-sonnet-4.5"
 }
@@ -189,9 +191,9 @@ xj 就問你一次（標紅寫「在沙盒外用你的權限跑」和實際跑�
 1. **能力表要自己填。** 查不到模型能力時用的是保守預設（**32k 上下文**、8k 輸出）。所以 1M 上下文的模型
    不寫 `capabilities` 的話只會被當成 32k。模型 id 帶斜線沒問題。
 2. **花費會顯示「未知」。** 花費是查 `~/.xing-janus/prices.json`，自己的服務要自己補一筆
-   （本機模型就全部填 0，不然每輪會問你「有幾個請求查不到價格，要繼續嗎」）。
-3. **本機模型建議降級**：`"tools": "unreliable"`、`"toolset": "reduced"`、`"parallelToolCalls": false`。
-   Ollama 會自動這樣（小模型常常不會正確呼叫工具），但「自己的服務」會被當成雲端 API。
+   （本機模型就全部填 0，不然一輪裡查不到價格的請求累積到 10 個，就會停下來問你要不要繼續）。
+3. **本機模型建議降級**：`"toolset": "reduced"`（只給 read、search、edit）。
+   Ollama 會自動這樣（小模型常常不會正確呼叫工具），但「自己的服務」（LM Studio、llama.cpp、vLLM…）會被當成雲端 API，要自己寫。
 
 本機的服務（llama.cpp 的 `llama-server`、vLLM、LM Studio）用 `http://localhost:<埠>/v1` 就好，
 不用金鑰；`http://` 只對 localhost 不會被警告。

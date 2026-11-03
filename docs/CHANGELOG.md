@@ -2,6 +2,35 @@
 
 版本號照 semver。
 
+## 0.1.2
+
+**需要**：跟 0.1.1 一樣 —— macOS、Linux 或 Windows，Node 24 以上（Windows 建議 24.20.0 以上）、`ripgrep`；Linux 另外要 bubblewrap、socat 和 sandbox-runtime 0.0.79，
+Windows 要 Git for Windows（見 `docs/install.md`）。
+
+**從 0.1.1 更新**：打 `xj update`（Homebrew 裝的用 `brew upgrade xj`）。還在 0.1.0 的話，照 `docs/install.md`「更新」那一節的最後一段手動換一次。
+設定檔、金鑰、對話紀錄都不用動。
+
+**下載之後先驗**（兩個檔案跟壓縮檔一起放）：
+
+```bash
+shasum -a 256 -c xj-0.1.2-darwin.tar.gz.sha256
+minisign -Vm xj-0.1.2-darwin.tar.gz -P <你留的那份公鑰>
+```
+
+Linux 是 `xj-0.1.2-linux-x64.tar.gz` 或 `xj-0.1.2-linux-arm64.tar.gz`（SHA-256 用 `sha256sum -c` 驗），Windows 是 `xj-0.1.2-windows.zip`
+（PowerShell 的驗法見下面 0.1.0 那一段）。第一次用的話，照 `docs/install.md` 裝好、跑 `xj setup`。
+
+修正：
+
+- `xj reset`：照 `docs/install.md` 留了公鑰（`~/.xing-janus/minisign.pub`）之後也刪得掉（以前說「不像是 Xing Janus 的東西」就停了）；
+  Windows 的 `acl-fix.json`、寫到一半被中斷留下的暫存檔也認得
+- 安全：`id_dsa.pub` 也算機密檔（另外三種 SSH 金鑰的 `.pub` 本來就擋）
+- 抓網頁（`web_fetch`）：同一個網站的轉址照說明最多跟 5 次（以前第 5 次就停）
+- 使用者文件：快速開始補上安裝、換平台、更新；README 補上怎麼更新；疑難排解補上「右邊那一欄對不齊」。
+  設定、使用說明、安裝、隱私、安全說明整個對過程式，改正寫錯、漏寫的地方，例如：`anthropic.fallback` 是請求被安全分類器擋下時才換模型；
+  `limits` 的輸出上限碰到時只提醒、不停下來問；`dangerRemove` 加 `"sudo"` 會讓 `su`、`doas` 這幾個一起不問；Homebrew 移除的順序（先 `xj reset`）；
+  Windows 移除時漏掉的檔案和認證管理員裡的金鑰；設定裡的 `tools`（`"reliable"`／`"unreliable"`）、`parallelToolCalls` 目前沒有作用
+
 ## 0.1.1
 
 **需要**：跟 0.1.0 一樣 —— macOS、Linux 或 Windows，Node 24 以上、`ripgrep`；Linux 另外要 bubblewrap、socat 和 sandbox-runtime 0.0.79，

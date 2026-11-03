@@ -17,6 +17,7 @@
 ### Windows
 
 - **Node 24 or later**: download the installer from nodejs.org and install it for the whole computer (the default `C:\Program Files\nodejs`).
+  24.20.0 or later is recommended: older Node on Windows sometimes crashes when it is force-quit, and `xj doctor` warns about it.
   nvm-windows also works; the sandbox account can read its folder (xj opens it up).
 - **Git for Windows** (includes Git Bash): https://git-scm.com/download/win . The bash tool runs commands with it, and permission checks work the same as on macOS and Linux.
   Without it only the powershell tool is left, and in PowerShell only whitelisted read-only forms (`Get-ChildItem`, `Get-Content`…) run without asking; everything else asks every time.
@@ -165,9 +166,9 @@ First install what the "Windows" list above needs. In PowerShell:
 
 Installed with Homebrew: `brew upgrade xj`.
 
-Installed by hand (macOS, Linux, Windows): `xj update`. `xj update --check` only checks whether a new version is out, without downloading. v0.1.0 does not have `xj update` yet: from v0.1.0, update by hand once as in the last paragraph below.
+Installed by hand (macOS, Linux, Windows): `xj update` (`xj upgrade` works too). `xj update --check` only checks whether a new version is out, without downloading. v0.1.0 does not have `xj update` yet: from v0.1.0, update by hand once as in the last paragraph below.
 
-- Xing Janus never goes online by itself to check for updates (normally its only outside connections are the model APIs): it connects only when you run `xj update`, and only to GitHub (to look up the latest version on the releases page and download its files).
+- Xing Janus never goes online by itself to check for updates (normally its only outside connections are the model APIs and the domains you allow): it connects only when you run `xj update`, and only to GitHub (to look up the latest version on the releases page and download its files).
   Behind a proxy, set `NODE_USE_ENV_PROXY=1` and `HTTPS_PROXY`.
 - It only installs versions newer than yours. After downloading it checks the SHA-256 and the signature (with the public key built into this version, never one fetched from the network), and the signature's trusted comment must name that version and file; only then does it install.
   If you kept your own copy of the public key as in step 2 above (`~/.xing-janus/minisign.pub`), it must be the same key as the built-in one, or xj update stops (the key may have changed, or files may have been replaced: check the README and CHANGELOG first).
@@ -180,21 +181,26 @@ Windows: quit any running xj first, then repeat step 3 of "Installing on Windows
 
 ## Uninstall
 
-Installed with Homebrew: `brew uninstall xj` and `brew untap xing312101/xing-janus`, then delete `~/.xing-janus` and the keys in the keychain as below.
+Installed with Homebrew: run `xj reset` below first (after `brew uninstall` there is no `xj` left to run), then `brew uninstall xj` and `brew untap xing312101/xing-janus` (instead of the line below that deletes the program), and finally delete the keys in the keychain.
 
 ```bash
-xj reset                                           # delete ~/.xing-janus (lists what will go and asks first)
+xj reset                                           # delete ~/.xing-janus and ~/.xing-janus-cache (lists what will go and asks first)
 rm ~/.local/bin/xj && rm -r ~/.local/share/xj-*    # delete the program
 security delete-generic-password -s xing-janus-anthropic   # the key in the keychain (same for openai and others)
 ```
 
-Windows: after `xj reset`, in a normal PowerShell, delete the program folder and remove it from PATH (the PATH is your own account's; do not use administrator rights for this):
+With several keys for one provider, the named ones are separate items in the keychain (Credential Manager on Windows), `xing-janus-<provider>--<name>` (for example `xing-janus-anthropic--work`); delete each of them too.
+
+Windows: after `xj reset`, in a normal PowerShell, delete the program folder (along with the old version `xj.old` and the log `xj-update.log` that `xj update` leaves behind)
+and `%LOCALAPPDATA%\xing-janus`, where xj keeps track of sandbox permissions; then remove the program folder from PATH and delete the keys in Credential Manager (the PATH is your own account's; do not use administrator rights for this):
 
 ```powershell
 $dir = "$env:LOCALAPPDATA\Programs\xj"
 Remove-Item -Recurse -Force $dir
+Remove-Item -Recurse -Force "$dir.old", "$dir.update", "$env:LOCALAPPDATA\Programs\xj-update.log", "$env:LOCALAPPDATA\xing-janus" -ErrorAction SilentlyContinue
 $path = [Environment]::GetEnvironmentVariable('Path', 'User')
 [Environment]::SetEnvironmentVariable('Path', (($path -split ';') | Where-Object { $_ -and $_ -ne $dir }) -join ';', 'User')
+cmdkey /delete:xing-janus-anthropic     # the key in Credential Manager (likewise for openai and others, and for each named key)
 ```
 
 If you installed the sandbox, then in PowerShell with administrator rights:
