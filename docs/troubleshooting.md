@@ -14,8 +14,10 @@
 | Ollama 說上下文不夠 | 用 `OLLAMA_CONTEXT_LENGTH=32768` 重新啟動 Ollama |
 | 推理區塊被丟掉的提醒、歷史檢查回 400 | 這是 Xing Janus 的 bug：用 `--debug` 重現，回報 |
 | 終端機壞掉（捲動區域沒還原） | 打 `reset` 或 `printf '\e[r'` |
+| `xj update` 裝好了新版，卻說「PATH 上找不到指到這一版的 xj 連結」，`xj --version` 還是舊版 | 從 v0.1.1、v0.1.2 更新、而且是在家目錄（或 `/`）打 `xj update` 的時候會這樣：新版已經裝好，只是 `xj` 的連結還指著舊版。照它印出來的那一行 `ln -sf …` 改過去就好（或換到別的資料夾再打一次 `xj update`）。在 `/` 打的話可能連解壓都失敗（找不到 gzip），一樣換個資料夾再打。v0.1.3 起修了：之後從 v0.1.3 換版不會這樣 |
 | 有 emoji、國旗、「…」這類字的那一行，全螢幕右邊那一欄對不齊 | xj 開場會量這個終端機把這些字畫成幾格，排版照量到的算。隔著 tmux、screen 這類多工器時，量到的是那一層算的寬度，終端機實際畫的可能不一樣；終端機不回答游標位置的話，就照環境變數猜。內容都在，只是右邊那一欄往左或往右跑。要對齊的話直接在終端機裡開 xj，或用 `/tui classic` 換成一般模式（沒有右邊那一欄）。還是不對的話，回報時附上終端機的名稱、版本和 `xj doctor --report` |
 | 啟動時說「xj 不採用 NODE_OPTIONS 裡的…」 | `NODE_OPTIONS` 裡的 `--import`、`--require` 這類會讓別的程式在 xj 裡面執行（沙盒外、拿得到金鑰），所以 xj 只接受 `--use-system-ca`、`--use-openssl-ca`、`--max-old-space-size`，其他的不用。是你自己設的就可以不管；不是的話，查一下是誰設的（例如專案的 `.envrc`） |
+| 名字裡出現 `<U+202E>`、`<U+200B>` 這種寫法 | 那是看不見的字元：方向控制字元（`<U+202E>` 這類）會把同一行後面的字反過來，零寬字元（`<U+200B>` 這類）會讓兩個名字看起來一樣。要你回答的問題（信任這個資料夾嗎、換平台）兩種都標出來，狀態列、選單這些畫面上的名字標出方向控制字元。這種名字是外面來的（repo 的資料夾、檔名、模型服務回的名字）：不認得的話先別答應，看清楚是哪裡來的 |
 
 ## docker 指令在沙盒裡失敗
 
@@ -53,6 +55,7 @@
 | 沙盒裡跑 node 的腳本（`npm test`、`node --test`、`node 檔案.js`）出現 `EPERM: operation not permitted, lstat 'C:\Users\<你>\Desktop'` | Node 找腳本的實際路徑時，要讀每一層上層資料夾的屬性。xj 開沙盒時會替家目錄裡的那幾層加「只能讀屬性」的權限（見下面「不一樣的地方」），正常就不會這樣。還是出現的話，看開場有沒有「上層資料夾加不上權限」的提醒（例如公司的電腦擋了 PowerShell）：這時這類指令改在沙盒外跑（設定檔的 `sandbox.excludedCommands` 加 `npm`、`node`，每次都先問你） |
 | 沙盒裡的 PowerShell 印出 `Project:\src\…` 這種路徑 | 沙盒的帳號讀不到你家目錄這些上層的資料夾，PowerShell 自己進不了工作目錄（會停在 `C:\`），所以 xj 開一個指到工作目錄的 `Project:` 磁碟機讓它進去。`Project:\src\a.ts` 就是專案裡的 `src\a.ts` |
 | PowerShell 的指令（不是 `Get-Content` 這種）每個都問 | PowerShell 的白名單只認很單純的寫法：唯讀的 cmdlet（`Get-ChildItem`、`Get-Content`、`Select-String`、`Select-Object`…），參數是一般的字或單引號，沒有 `$`、括號、雙引號、`>`。問你的時候會講是哪裡不算（例如「有 $（變數、子運算式）」）。其他的指令請讓它用 bash（Git Bash） |
+| `xj update` 說下次開就是新版，開起來還是舊版（開場、`xj doctor` 說「上次的 xj update 沒換成」） | 新版先解在 `%LOCALAPPDATA%\Programs\xj.update`，xj 結束之後由背景把資料夾改名換上：那時資料夾被開著就換不成（例如某個視窗 `cd` 在 xj 的資料夾裡、開著裡面的檔案），原因寫在 `%LOCALAPPDATA%\Programs\xj-update.log`。關掉別的 xj 視窗、離開那個資料夾，再打一次 `xj update`（0.1.3 起在 xj 的資料夾裡打的話，它會先停下來叫你換資料夾；開場、`xj doctor` 的這句也是 0.1.3 起才有） |
 | 在 cmd 裡用 `xj -p` 時按了 Ctrl-C，xj 結束後 cmd 問「要終止批次工作嗎 (Y/N)?」 | 那是 cmd.exe 自己問的（xj.cmd 是批次檔），回答 Y 或 N 都一樣。對話（不加 `-p`）裡的 Ctrl-C 是 xj 自己處理的按鍵，不會這樣；用 PowerShell 跑 `xj -p` 也不會 |
 | MCP server 說「Windows 的沙盒現在不能跑 MCP server」 | Windows 的沙盒還沒辦法把 stdin 接給沙盒裡的程式，而 MCP（stdio）靠的就是 stdin。要用的話在設定檔把那個 server 的 `sandbox` 設成 `false`：它會以你的權限在沙盒外跑，每次呼叫照樣先問你（除非列在 `autoApprove`）。只給你信任的 server 這樣設 |
 | 擔心在別人的 repo 裡打 `xj` 會跑到 repo 裡的同名程式 | xj.cmd 自己找 node 時不找目前的資料夾，也不用工作目錄底下的 node（PATH 上經過 junction 指進工作目錄的認不出來：批次檔沒辦法查實際路徑，Git Bash 用的 sh 啟動器認得）。但「找 xj.cmd 本身」是 cmd.exe 的事：cmd 會先找目前的資料夾，所以 repo 裡放一個 `xj.cmd` 就會被執行。建議用 PowerShell（它不找目前的資料夾），或在系統的環境變數設 `NoDefaultCurrentDirectoryInExePath=1` |

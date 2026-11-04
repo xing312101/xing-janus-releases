@@ -11,9 +11,9 @@
       "enum": [1]
     },
     "defaultModel": {
-      "description": "預設的廠商和模型，例如 anthropic:claude-opus-5-5。寫系列名稱（anthropic:opus）就自動用該系列最新、還在服務中的模型",
+      "description": "預設的廠商和模型，例如 anthropic:claude-opus-5-5。寫系列名稱（anthropic:opus）就自動用該系列最新、還在服務中的模型。模型的名字照服務給的（例如 llama.cpp 的檔案路徑），不能有控制碼和看不見的字（方向控制、零寬、行分隔、一長串組合字元）",
       "type": "string",
-      "pattern": "^[a-z0-9-]+:[A-Za-z0-9._:/-]+$"
+      "pattern": "^(?!.*\\p{M}{4})[a-z0-9-]+:[^\\p{Cc}\\p{Default_Ignorable_Code_Point}\\p{Bidi_Control}\\u2028\\u2029]+$"
     },
     "effort": {
       "description": "每個模型的預設 effort。鍵是模型 ID、系列名稱或 default",

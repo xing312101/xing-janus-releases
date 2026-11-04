@@ -8,7 +8,7 @@
 | 欄位 | 預設 | 說明 |
 |---|---|---|
 | `version` | `1` | 設定檔格式的版本：xj 自己寫，格式改了會自動轉換，不用自己改 |
-| `defaultModel` | `anthropic:claude-opus-5-5` | 預設的廠商和模型。寫系列名稱（`anthropic:opus`）就自動用最新的。`xj setup` 會照你選的那一家改寫這一項，`/model` 換了也會改寫 |
+| `defaultModel` | `anthropic:claude-opus-5-5` | 預設的廠商和模型。寫系列名稱（`anthropic:opus`）就自動用最新的。模型的名字照服務給的（例如 llama.cpp 的檔案路徑），不能有控制碼和看不見的字。`xj setup` 會照你選的那一家改寫這一項，`/model` 換了也會改寫 |
 | `effort` | `{ "default": "high" }` | 每個模型的預設推理強度，鍵是模型 ID、系列名稱或 `default`。模型不支援那個等級的話用模型自己的預設；不支援推理強度的模型不送 |
 | `defaultMode` | `normal` | `normal`、`auto-edit`、`full-auto`（全自動，等於每次都加 `--auto`，見 usage.md）、`plan`、`read-only`。`xj -p` 不吃 `auto-edit`、`full-auto`（用一般模式），全自動要明確加 `--auto`。全部不問不能設成預設：每次都要加 `--dangerously-skip-permissions` |
 | `uiLanguage` | 照系統的語言 | 介面的語言：`zh-TW` 或 `en`。沒寫的話看環境變數 `LC_ALL`、`LC_MESSAGES`、`LANG` 第一個有設的（`C`、`POSIX` 不算），都沒設就照作業系統的地區設定：`zh` 開頭的用繁體中文，其他用英文。第一次啟動時問（照這個預先選好），`/language ui` 會改它 |
@@ -76,8 +76,8 @@
   | `keychain` | 存取鑰匙圈、認證管理員（`security`、`cmdkey`、`vaultcmd`） |
   | `system-dirs` | 寫系統目錄 |
 
-- **機密檔**（讀、寫、搜尋都擋；在對話裡按「是」也不行，只能改設定檔）：`.env`、`.env.*`、`*.pem`、`*.key`、`*.p12`、`*.pfx`、`*.keystore`、`*.jks`、`*.p8`，
-  SSH 金鑰（`id_rsa`、`id_ed25519`、`id_ecdsa`、`id_dsa` 和它們的 `.pub`），`credentials`、`credentials.json`、`credentials.toml`、`.npmrc`、`.netrc`、`.pypirc`、`.git-credentials`、`.envrc`，
+- **機密檔**（讀、寫、搜尋都擋，但沙盒裡的指令間接改得到，見 cerberus.md；在對話裡按「是」也不行，只能改設定檔）：`.env`、`.env.*`、`*.pem`、`*.key`、`*.p12`、`*.pfx`、`*.keystore`、`*.jks`、`*.p8`、`*.ppk`（PuTTY），
+  SSH 金鑰（`id_rsa`、`id_ed25519`、`id_ecdsa`、`id_dsa`、`id_ed25519_sk`、`id_ecdsa_sk` 和它們的 `.pub`），`credentials`、`credentials.json`、`credentials.toml`、`.npmrc`、`.netrc`、`.pypirc`、`.git-credentials`、`.envrc`，
   Android／Flutter 的 `local.properties`、`key.properties`、`keystore.properties`、`secrets.properties`、`adbkey`，家目錄的 `~/.gradle/gradle.properties`、`~/.docker/config.json`、`~/.kube/config`、`~/.config/gh/hosts.yml`、`~/.m2/settings.xml`、nvm 和 npm 裡的 `npmrc`，
   加上 `keyFiles` 指的金鑰檔。不算的：`.env.example`、`.env.sample`、`.env.template`、`~/.android/debug.keystore`。要加：`permissions.secretFiles`（例如 `"*.secret"`）；要拿掉：`permissions.secretFilesRemove`（例如 `".npmrc"`）。
 
@@ -197,3 +197,5 @@ xj 就問你一次（標紅寫「在沙盒外用你的權限跑」和實際跑�
 
 本機的服務（llama.cpp 的 `llama-server`、vLLM、LM Studio）用 `http://localhost:<埠>/v1` 就好，
 不用金鑰；`http://` 只對 localhost 不會被警告。
+llama.cpp 的 `llama-server` 沒加 `--alias` 的話，模型的名字就是 `-m` 給的檔案路徑（例如 `C:\models\qwen2.5-7b-instruct-q4_k_m.gguf`）：
+照樣選得到、記得住，嫌長的話開的時候加 `--alias qwen`，之後用 `/model llamacpp:qwen` 選它（`llamacpp` 是 `/model` 找到它時取的名字，自己加的照你取的）。

@@ -14,6 +14,8 @@ Fetching web pages (`web_fetch`) is a connection xj makes itself, outside the sa
 ## What it cannot block, and you need to watch
 
 - **Things in the working folder**: the sandbox allows changes to the working folder, so `rm -rf` and `git reset --hard` are not blocked (they are on the danger list and ask every time). Keep your changes in git.
+  Secret files too: sandboxed commands cannot read them, but can change them indirectly (for example a program run by `npm test` appending a line to `.env`); only xj's own tools and commands that name the file are blocked from writing them.
+- **Secret files are recognized by name**: the list is in "Built-in whitelist, danger list and secret files" in config.md. Keys with other names (such as `deploy_key` or `service-account.json`) are not blocked: add them to `permissions.secretFiles`.
 - **Prompt injection**: files and web pages can hide instructions telling the AI to do harm. It is taught to treat what it reads as data, not instructions, but that is not guaranteed. Only use it on code you trust.
 - **Fetching web pages (`web_fetch`)**: anyone can write a web page, which makes them the most common source of prompt injection; the URL itself can also carry data out (file contents in the query string).
   So every new domain asks you, the full URL is shown when it asks, and URLs that look like they contain a key always ask. **Once a domain is allowed, later URLs are no longer shown to you**:

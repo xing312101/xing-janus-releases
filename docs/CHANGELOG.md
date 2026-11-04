@@ -2,6 +2,59 @@
 
 版本號照 semver。
 
+## 0.1.3
+
+**需要**：跟 0.1.2 一樣 —— macOS、Linux 或 Windows，Node 24 以上（Windows 建議 24.20.0 以上）、`ripgrep`；Linux 另外要 bubblewrap、socat 和 sandbox-runtime 0.0.79，
+Windows 要 Git for Windows（見 `docs/install.md`）。
+
+**從 0.1.1、0.1.2 更新**：打 `xj update`（Homebrew 裝的用 `brew upgrade xj`）。換版是舊版的程式在做，下面修的這幾件這一次還是會碰到：
+- macOS、Linux 手動裝的：**不要在家目錄打**，換到別的資料夾（例如你的專案裡）再打。0.1.1、0.1.2 的 `xj update` 在家目錄打的話，新版會裝好，
+  `xj` 的連結卻不會換過去；已經打了的話，照它印出來的那一行 `ln -sf …` 做就好。
+- Windows：**不要在 xj 的安裝資料夾**（`%LOCALAPPDATA%\Programs\xj`）**裡打**：在那裡打的話，新版解好了卻換不上去，也不會講。
+  你留的公鑰（`~/.xing-janus/minisign.pub`）是用 PowerShell 的 `>` 存的話，舊版會說它「不是 minisign 的公鑰」、不更新：
+  從你原本那一份轉存（不要從發佈頁面重抄）：`$f = "$env:USERPROFILE\.xing-janus\minisign.pub"; (Get-Content $f) | Set-Content $f`。
+
+還在 0.1.0 的話，照 `docs/install.md`「更新」那一節的最後一段手動換一次。
+設定檔、金鑰、對話紀錄都不用動。
+
+**下載之後先驗**（兩個檔案跟壓縮檔一起放）：
+
+```bash
+shasum -a 256 -c xj-0.1.3-darwin.tar.gz.sha256
+minisign -Vm xj-0.1.3-darwin.tar.gz -P <你留的那份公鑰>
+```
+
+Linux 是 `xj-0.1.3-linux-x64.tar.gz` 或 `xj-0.1.3-linux-arm64.tar.gz`（SHA-256 用 `sha256sum -c` 驗），Windows 是 `xj-0.1.3-windows.zip`
+（照 `docs/install.md`「Windows 的安裝」第 1、2 步驗，用你留的那份公鑰）。驗完看 minisign 印的 `Trusted comment:`，
+要是 `xing-janus v0.1.3 xj-0.1.3-<平台>…`，不是的話不要裝（舊版連同它的簽章換個檔名，前面兩行照樣驗得過）。
+第一次用的話，照 `docs/install.md` 裝好、跑 `xj setup`。
+
+修正：
+
+- `xj update`（macOS、Linux）：在家目錄（或 `/`）打的時候，PATH 上指到舊版的 `xj` 連結也會換到新版（以前說「PATH 上找不到指到這一版的 xj 連結」，`xj` 還是舊版；
+  在 `/` 打的話連解壓都會失敗）。換版是舊版的程式在做：從這一版再換到之後的版本才有效
+- 安全：`xj update` 解壓的時候不照你的 PATH 找程式（Linux 的 tar 照 PATH 找 gzip：PATH 上有沙盒寫得到的地方的話，
+  例如啟用了 venv 的專案，那裡被放了假的 gzip 就會在沙盒外跑，還能換掉裝上去的內容）
+- 安全：`xj setup` 只拿設定檔收得下的模型名字當建議的預設值（以前模型服務回的第一個名字原樣印在提示裡：惡意的服務可以改剪貼簿、清畫面）；
+  設定檔先檢查過才寫（以前先寫，寫壞了之後每次開 xj 都講設定檔有錯）
+- 安全：PuTTY 的私鑰（`*.ppk`）、存在硬體金鑰上的 SSH 金鑰（`id_ed25519_sk`、`id_ecdsa_sk` 和它們的 `.pub`）也算機密檔
+- 安全：開沙盒之前，沙盒外的 PATH 也拿掉沙盒寫得到的地方：沙盒程式庫照 PATH 找 `which`，你在 `sandbox.writable` 加的資料夾剛好也在 PATH 上的話，
+  沙盒裡的指令在那裡放的 `which` 會在沙盒外跑（預設開放寫入的 `~/.pub-cache`、`~/.gradle` 裡會被放上 PATH 的位置本來就擋寫入，不受影響）
+- 安全：要你回答是／否的問題（信任這個資料夾嗎、貼上的斜線指令、換平台）跟核准畫面一樣，把控制碼和看不見的字（方向控制、零寬）標出來：
+  資料夾名稱裡的方向控制字元會把同一行後面的字反過來。畫面上其他單行的名字（模型、檔名、服務回的錯誤）也標出方向控制字元
+- `xj update`（Windows）：在 xj 的安裝資料夾裡打的話先停下來、叫你換資料夾（以前說「下次開的就是新版」，背景卻換不上去）；
+  背景沒換成的話（例如別的視窗開著裡面的檔案），下次開 xj 和 `xj doctor` 會講原因和怎麼做
+- `xj update`：你留的公鑰存成 UTF-16 也認得（Windows PowerShell 5.1 的 `'<公鑰>' > 檔案` 存的；以前說它「不是 minisign 的公鑰」、不更新）
+- `xj update`：下載、解壓的時候按 Ctrl-C，下載和解到一半的檔案都收掉、不換（以前留在安裝資料夾的上一層，叫 `.xj-update-<16 進位>`，直接刪掉就好）
+- `/model`：名字是檔案路徑的模型（llama.cpp 的 `llama-server` 沒加 `--alias` 時）也記得住，下次開 xj 照樣用它（以前設定檔的格式不收反斜線、空白，沒記進去）；
+  看不見的字（方向控制、零寬）照樣不收
+- Windows：開場的「沙盒裡的指令在這些磁碟的根目錄建得了資料夾」只講一次（以前講兩次），沙盒擋不全的時候也講（以前不講）；`xj -p`、`xj doctor` 也一樣。
+  `xj -p` 也跟對話的開場一樣講沙盒的提醒（macOS 開了 `sandbox.allowLocalBinding` 時）
+- 在 xj 裡打金鑰、新增服務時的說明照字詞折：英文字不從中間切開，折下來的列不從空白開始
+- 使用者文件：README 改寫得更精簡、安全的說法更精準；install.md 寫了從 0.1.1、0.1.2 更新時怎麼做、Windows 怎麼留公鑰（`%USERPROFILE%`）、
+  `xj reset` 會連你留的公鑰一起刪；安全說明補了「機密檔照檔名認」「沙盒裡的指令間接改得到機密檔」；config.md 寫了 `llama-server` 的 `--alias`；
+  疑難排解補了這兩種更新的問題
+
 ## 0.1.2
 
 **需要**：跟 0.1.1 一樣 —— macOS、Linux 或 Windows，Node 24 以上（Windows 建議 24.20.0 以上）、`ripgrep`；Linux 另外要 bubblewrap、socat 和 sandbox-runtime 0.0.79，

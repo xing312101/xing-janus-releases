@@ -2,6 +2,59 @@
 
 Versions follow semver.
 
+## 0.1.3
+
+**Requires**: the same as 0.1.2 — macOS, Linux or Windows; Node 24 or later (on Windows, 24.20.0 or later is recommended); `ripgrep`. On Linux also bubblewrap, socat and sandbox-runtime 0.0.79;
+on Windows, Git for Windows (see `docs/en/install.md`).
+
+**Updating from 0.1.1 or 0.1.2**: run `xj update` (if you installed with Homebrew, use `brew upgrade xj`). The update is done by the old version's code, so some of the fixes below still bite this once:
+- macOS, Linux (installed by hand): **do not run it in your home folder**; run it from another folder, such as one of your projects. Run in the home folder, `xj update` in 0.1.1 and 0.1.2
+  installs the new version but leaves the `xj` link pointing at the old one; if you already did, run the `ln -sf …` line it printed.
+- Windows: **do not run it inside xj's install folder** (`%LOCALAPPDATA%\Programs\xj`): run there, the new version is unpacked but never swapped in, and nothing tells you.
+  If you saved your copy of the public key (`~/.xing-janus/minisign.pub`) with PowerShell's `>`, the old version says it "is not a minisign public key" and does not update:
+  convert your own copy (do not copy it again from the releases page) with `$f = "$env:USERPROFILE\.xing-janus\minisign.pub"; (Get-Content $f) | Set-Content $f`.
+
+If you are still on 0.1.0, update by hand this once, following the last paragraph of "Update" in `docs/en/install.md`.
+Your config, keys and transcripts stay as they are.
+
+**Verify after downloading** (keep the two files next to the archive):
+
+```bash
+shasum -a 256 -c xj-0.1.3-darwin.tar.gz.sha256
+minisign -Vm xj-0.1.3-darwin.tar.gz -P <your saved copy of the public key>
+```
+
+The Linux files are `xj-0.1.3-linux-x64.tar.gz` or `xj-0.1.3-linux-arm64.tar.gz` (check the SHA-256 with `sha256sum -c`); Windows is `xj-0.1.3-windows.zip`
+(verify it as in steps 1–2 of "Installing on Windows" in `docs/en/install.md`, with your saved copy of the public key). Then check that the `Trusted comment:` minisign prints
+reads `xing-janus v0.1.3 xj-0.1.3-<platform>…`; if not, do not install it (an old version renamed together with its signature passes both lines above).
+If this is your first install, follow `docs/en/install.md`, then run `xj setup`.
+
+Fixed:
+
+- `xj update` (macOS, Linux): run in the home folder (or in `/`), it now switches the `xj` link on PATH from the old version to the new one (it used to say "No xj link on PATH points to this version" and leave `xj` on the old version;
+  run in `/`, even the unpacking failed). The update is done by the old version's code, so this takes effect when updating from this version onwards
+- Security: `xj update` no longer looks up programs on your PATH while unpacking (tar on Linux looks up gzip on PATH: if your PATH has a place the sandbox can write to,
+  such as a project with an activated venv, a fake gzip planted there would run outside the sandbox and could replace what gets installed)
+- Security: `xj setup` only suggests a default model whose name the config accepts (it used to print the first name the model service returned as is, so a malicious service could change your clipboard or clear the screen);
+  the config is checked before it is written (it used to be written first, and if it was broken every start of xj said so)
+- Security: PuTTY private keys (`*.ppk`) and SSH keys kept on a hardware key (`id_ed25519_sk`, `id_ecdsa_sk` and their `.pub`) are secret files too
+- Security: before the sandbox starts, places the sandbox can write to are also removed from the PATH used outside the sandbox: the sandbox library looks up `which` on PATH, so if a folder you added to `sandbox.writable`
+  is also on your PATH, a `which` that a sandboxed command put there would run outside the sandbox (the places on PATH inside `~/.pub-cache` and `~/.gradle`, writable by default, were already blocked from writing)
+- Security: yes/no questions (trust this folder?, a pasted slash command, switching platforms) show control and invisible characters (bidi controls, zero-width) like the approval screens do:
+  a bidi control in a folder name would reverse the rest of the line. Other one-line names on screen (models, file names, errors returned by services) show bidi controls too
+- `xj update` (Windows): run inside xj's install folder, it stops first and asks you to leave (it used to say the next start runs the new version, but the background swap failed);
+  if the background swap fails anyway (for example another window has a file in the folder open), the next start of xj and `xj doctor` say why and what to do
+- `xj update`: a saved public key in UTF-16 is recognized too (as written by `'<public key>' > file` in Windows PowerShell 5.1; it used to say the file "is not a minisign public key" and not update)
+- `xj update`: pressing Ctrl-C while it downloads or unpacks removes the download and the partly unpacked files, and nothing is swapped (they used to be left one level above the install folder, in `.xj-update-<hex>`, which you can simply delete)
+- `/model`: models whose name is a file path (llama.cpp's `llama-server` without `--alias`) are remembered too, so the next start uses them again (the config format used to reject backslashes and spaces, so it was not saved);
+  invisible characters (bidi controls, zero-width) are still rejected
+- Windows: the start screen says "Commands in the sandbox can create folders in the root of these drives" once (it used to say it twice), and also when the sandbox is degraded (it used not to); the same for `xj -p` and `xj doctor`.
+  `xj -p` also shows the sandbox notice like the start of a conversation does (on macOS, when `sandbox.allowLocalBinding` is on)
+- When typing in xj (entering a key, adding a service), the explanation wraps at word boundaries: English words are no longer split, and wrapped rows do not start with a space
+- User docs: the README is shorter and its security statements more precise; install.md says what to do when updating from 0.1.1 or 0.1.2, how to keep the public key on Windows (`%USERPROFILE%`),
+  and that `xj reset` deletes your saved key too; Security adds "secret files are recognized by name" and "sandboxed commands can change secret files indirectly"; config.md covers `llama-server`'s `--alias`;
+  troubleshooting covers both update problems
+
 ## 0.1.2
 
 **Requires**: the same as 0.1.1 — macOS, Linux or Windows; Node 24 or later (on Windows, 24.20.0 or later is recommended); `ripgrep`. On Linux also bubblewrap, socat and sandbox-runtime 0.0.79;

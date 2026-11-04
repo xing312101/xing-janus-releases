@@ -8,7 +8,7 @@ Choosing "always allow" at a question writes to `permissions.allow`, `sandbox.al
 | Field | Default | Description |
 |---|---|---|
 | `version` | `1` | The format version of the file: xj writes it and converts old files itself, so you never change it |
-| `defaultModel` | `anthropic:claude-opus-5-5` | The default provider and model. A series name (`anthropic:opus`) always uses the latest one. `xj setup` rewrites this for the provider you pick, and so does switching with `/model` |
+| `defaultModel` | `anthropic:claude-opus-5-5` | The default provider and model. A series name (`anthropic:opus`) always uses the latest one. The model part is the name the service gives it (for example a file path for llama.cpp), without control or invisible characters. `xj setup` rewrites this for the provider you pick, and so does switching with `/model` |
 | `effort` | `{ "default": "high" }` | The default reasoning effort per model; keys are model IDs, series names or `default`. If a model does not support that level, the model's own default is used; models without reasoning effort get none |
 | `defaultMode` | `normal` | `normal`, `auto-edit`, `full-auto` (the same as always adding `--auto`, see usage.md), `plan`, `read-only`. `xj -p` ignores `auto-edit` and `full-auto` (it uses normal mode) and needs an explicit `--auto` for full-auto. Skip-all-permissions mode cannot be the default: it needs `--dangerously-skip-permissions` every time |
 | `uiLanguage` | Your system's language | The interface language: `en` or `zh-TW`. If unset, xj looks at the first of the environment variables `LC_ALL`, `LC_MESSAGES` and `LANG` that is set (`C` and `POSIX` do not count), and otherwise at the operating system's region setting: anything starting with `zh` gives Traditional Chinese, everything else English. Asked on the first start (with that preselected); `/language ui` changes it |
@@ -76,8 +76,8 @@ These apply without any setting; `permissions` only holds what you add or remove
   | `keychain` | Accessing the keychain or Credential Manager (`security`, `cmdkey`, `vaultcmd`) |
   | `system-dirs` | Writing to system folders |
 
-- **Secret files** (reading, writing and searching are all blocked; answering yes in the conversation does not help, only the config file can change it): `.env`, `.env.*`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.keystore`, `*.jks`, `*.p8`,
-  SSH keys (`id_rsa`, `id_ed25519`, `id_ecdsa`, `id_dsa` and their `.pub`), `credentials`, `credentials.json`, `credentials.toml`, `.npmrc`, `.netrc`, `.pypirc`, `.git-credentials`, `.envrc`,
+- **Secret files** (reading, writing and searching are all blocked, though sandboxed commands can still change them indirectly: see cerberus.md; answering yes in the conversation does not help, only the config file can change it): `.env`, `.env.*`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.keystore`, `*.jks`, `*.p8`, `*.ppk` (PuTTY),
+  SSH keys (`id_rsa`, `id_ed25519`, `id_ecdsa`, `id_dsa`, `id_ed25519_sk`, `id_ecdsa_sk` and their `.pub`), `credentials`, `credentials.json`, `credentials.toml`, `.npmrc`, `.netrc`, `.pypirc`, `.git-credentials`, `.envrc`,
   Android/Flutter's `local.properties`, `key.properties`, `keystore.properties`, `secrets.properties`, `adbkey`, and in your home folder `~/.gradle/gradle.properties`, `~/.docker/config.json`, `~/.kube/config`, `~/.config/gh/hosts.yml`, `~/.m2/settings.xml`, and the `npmrc` files inside nvm and npm,
   plus the key files named in `keyFiles`. Not secret: `.env.example`, `.env.sample`, `.env.template`, `~/.android/debug.keystore`. To add: `permissions.secretFiles` (for example `"*.secret"`); to remove: `permissions.secretFilesRemove` (for example `".npmrc"`).
 
@@ -198,3 +198,6 @@ Three things to watch:
 
 Local services (llama.cpp's `llama-server`, vLLM, LM Studio) just need `http://localhost:<port>/v1`,
 without a key; `http://` only escapes the warning for localhost.
+Without `--alias`, llama.cpp's `llama-server` names the model after the file given to `-m` (for example `C:\models\qwen2.5-7b-instruct-q4_k_m.gguf`):
+that still works and is remembered, but for a shorter name start it with `--alias qwen` and pick it with `/model llamacpp:qwen`
+(`llamacpp` is the name `/model` gives it when it finds the server; if you added it yourself, use your name).

@@ -85,13 +85,13 @@ formula 由 tap 自己的 workflow 照這個發佈頁面最新的版本更新：
    minisign -Vm xj-<版本>-<平台>.tar.gz -P <公鑰>
    ```
 
-   **公鑰第一次拿到之後請自己留一份**（例如存成 `~/.xing-janus/minisign.pub`），之後每次更新都用你留的那一份驗。
+   **公鑰第一次拿到之後請自己留一份**（例如存成 `~/.xing-janus/minisign.pub`），之後每次更新都用你留的那一份驗。`xj reset` 會連 `~/.xing-janus` 一起刪，所以在別的地方也留一份。
    公鑰跟程式放在同一個 repo，所以只從那裡拿的話，repo 被動手腳時公鑰會跟著被換掉，簽章就驗不出問題。
 
    驗完請看 minisign 印出來的那行說明（trusted comment），裡面有版本和檔名：
 
    ```
-   Trusted comment: xing-janus v0.1.0 xj-0.1.0-darwin.tar.gz
+   Trusted comment: xing-janus v<版本> xj-<版本>-<平台>.tar.gz
    ```
 
    版本要跟你要裝的一樣。簽章驗得過只代表「這是發佈者簽的某一版」，不代表是最新版：
@@ -139,7 +139,12 @@ formula 由 tap 自己的 workflow 照這個發佈頁面最新的版本更新：
    minisign -Vm xj-<版本>-windows.zip -P <公鑰>
    ```
 
-   公鑰一樣請自己留一份，也一樣要看 trusted comment 裡的版本（見上面第 2 步）。
+   公鑰一樣請自己留一份，也一樣要看 trusted comment 裡的版本（見上面第 2 步）。留在 `~/.xing-janus/minisign.pub` 的話，`xj update` 每次都會核對它：
+
+   ```powershell
+   New-Item -ItemType Directory -Force "$env:USERPROFILE\.xing-janus" | Out-Null
+   Set-Content "$env:USERPROFILE\.xing-janus\minisign.pub" '<公鑰>'
+   ```
 3. 解壓到一個不帶版本號的資料夾（`%LOCALAPPDATA%\Programs\xj`），把它加進你的 PATH（只加給你自己）：
 
    ```powershell
@@ -167,6 +172,8 @@ formula 由 tap 自己的 workflow 照這個發佈頁面最新的版本更新：
 用 Homebrew 裝的：`brew upgrade xj`。
 
 手動裝的（macOS、Linux、Windows）：`xj update`（打 `xj upgrade` 也一樣）。`xj update --check` 只看有沒有新版、不下載。v0.1.0 還沒有 `xj update`：從 v0.1.0 要照下面最後一段手動更新一次。
+從 v0.1.1、v0.1.2 更新的話（換版是那兩版的程式在做）：macOS、Linux 不要在家目錄打 `xj update`（換到別的資料夾，例如你的專案裡），在家目錄打的話新版會裝好，`xj` 的連結卻不會換過去（見 troubleshooting.md）；
+Windows 不要在 xj 的資料夾裡打（見下面）；你留的公鑰是用 PowerShell 的 `>` 存的話，那兩版認不得，從你原本那一份轉存（不要從發佈頁面重抄）：`$f = "$env:USERPROFILE\.xing-janus\minisign.pub"; (Get-Content $f) | Set-Content $f`。
 
 - Xing Janus 不會自己連網路檢查更新（它平常對外的連線只有模型的 API 和你允許的網域）：你打 `xj update` 才連，只連 GitHub（查 releases 頁面最新的版本、下載那一版的檔案）。
   要經過 proxy 的話，設 `NODE_USE_ENV_PROXY=1` 和 `HTTPS_PROXY`。
@@ -174,6 +181,8 @@ formula 由 tap 自己的 workflow 照這個發佈頁面最新的版本更新：
   你照上面第 2 步自己留了公鑰（`~/.xing-janus/minisign.pub`）的話，它要跟內建的是同一把，不一樣就停下來（可能換了金鑰，也可能檔案被換過：先看 README 和 CHANGELOG）。
 - macOS、Linux：新版解在舊版的旁邊（例如 `~/.local/share/xj-<新版本>-<平台>`），PATH 上指到舊版的 `xj` 連結改指新版；舊版留著，確定沒問題之後自己刪。
 - Windows：新版先解在旁邊（`%LOCALAPPDATA%\Programs\xj.update`），這個 xj 結束之後才換上（舊的改名成 `xj.old`），下次開的就是新版；PATH 不用改。
+  換上要把資料夾改名，資料夾被開著就換不成：不要在 xj 的資料夾裡打 `xj update`（0.1.3 起它會先停下來叫你換資料夾）；別的視窗開著裡面的檔案而沒換成的話，0.1.3 起下次開 xj 會講（troubleshooting.md）。
+- 下載、解壓的時候按 Ctrl-C 會中斷：0.1.3 起下載和解到一半的檔案都收掉，不會換。
 - 新版要的 sandbox-runtime 版本不一樣的話（Linux、Windows 是你自己裝的），`xj update` 會印出要重裝的那一行。
 
 也可以照上面的步驟自己下載、驗證、解壓，再把 `xj` 的連結指到新的資料夾。

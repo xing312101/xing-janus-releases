@@ -85,13 +85,13 @@ and brew checks the downloaded file against the formula's SHA-256. To verify it 
    minisign -Vm xj-<version>-<platform>.tar.gz -P <public key>
    ```
 
-   **Keep your own copy of the public key the first time you get it** (for example in `~/.xing-janus/minisign.pub`), and verify every later update with your copy.
+   **Keep your own copy of the public key the first time you get it** (for example in `~/.xing-janus/minisign.pub`), and verify every later update with your copy. `xj reset` deletes `~/.xing-janus` along with it, so keep another copy elsewhere too.
    The public key lives in the same repo as the program, so if you only ever take it from there, someone who tampers with the repo can swap the key too, and the signature check would not catch it.
 
    After verifying, read the line minisign prints (the trusted comment); it contains the version and file name:
 
    ```
-   Trusted comment: xing-janus v0.1.0 xj-0.1.0-darwin.tar.gz
+   Trusted comment: xing-janus v<version> xj-<version>-<platform>.tar.gz
    ```
 
    The version must be the one you mean to install. A valid signature only means "the publisher signed some version", not that it is the latest:
@@ -139,7 +139,12 @@ First install what the "Windows" list above needs. In PowerShell:
    minisign -Vm xj-<version>-windows.zip -P <public key>
    ```
 
-   Again, keep your own copy of the public key, and check the version in the trusted comment (see step 2 above).
+   Again, keep your own copy of the public key, and check the version in the trusted comment (see step 2 above). If you keep it in `~/.xing-janus/minisign.pub`, `xj update` checks it every time:
+
+   ```powershell
+   New-Item -ItemType Directory -Force "$env:USERPROFILE\.xing-janus" | Out-Null
+   Set-Content "$env:USERPROFILE\.xing-janus\minisign.pub" '<public key>'
+   ```
 3. Unpack it into a folder without the version number (`%LOCALAPPDATA%\Programs\xj`) and add that to your PATH (for your account only):
 
    ```powershell
@@ -167,6 +172,8 @@ First install what the "Windows" list above needs. In PowerShell:
 Installed with Homebrew: `brew upgrade xj`.
 
 Installed by hand (macOS, Linux, Windows): `xj update` (`xj upgrade` works too). `xj update --check` only checks whether a new version is out, without downloading. v0.1.0 does not have `xj update` yet: from v0.1.0, update by hand once as in the last paragraph below.
+When updating from v0.1.1 or v0.1.2 (the update is done by those versions' code): on macOS and Linux, do not run `xj update` in your home folder (run it from another folder, such as one of your projects); run from the home folder, they install the new version but leave the `xj` link pointing at the old one (see troubleshooting.md).
+On Windows, do not run it inside xj's folder (see below); and if you saved your copy of the public key with PowerShell's `>`, those versions cannot read it: convert your own copy (do not copy it again from the releases page) with `$f = "$env:USERPROFILE\.xing-janus\minisign.pub"; (Get-Content $f) | Set-Content $f`.
 
 - Xing Janus never goes online by itself to check for updates (normally its only outside connections are the model APIs and the domains you allow): it connects only when you run `xj update`, and only to GitHub (to look up the latest version on the releases page and download its files).
   Behind a proxy, set `NODE_USE_ENV_PROXY=1` and `HTTPS_PROXY`.
@@ -174,6 +181,8 @@ Installed by hand (macOS, Linux, Windows): `xj update` (`xj upgrade` works too).
   If you kept your own copy of the public key as in step 2 above (`~/.xing-janus/minisign.pub`), it must be the same key as the built-in one, or xj update stops (the key may have changed, or files may have been replaced: check the README and CHANGELOG first).
 - macOS, Linux: the new version is unpacked next to the old one (for example `~/.local/share/xj-<new version>-<platform>`) and the `xj` link on PATH that points to the old one is switched to the new one. The old version stays; delete it yourself once the new one works.
 - Windows: the new version is first unpacked next to it (`%LOCALAPPDATA%\Programs\xj.update`) and swapped in after this xj exits (the old one is renamed `xj.old`); the next start runs the new version, and PATH does not change.
+  The swap renames the folder, which fails while the folder is in use: don't run `xj update` from inside xj's folder (from 0.1.3 it stops first and asks you to leave); if another window had a file in it open and the swap failed, from 0.1.3 the next start of xj tells you (troubleshooting.md).
+- Pressing Ctrl-C while it downloads or unpacks interrupts it: from 0.1.3 the download and the partly unpacked files are removed, and nothing is swapped.
 - If the new version needs a different sandbox-runtime (installed by you on Linux and Windows), xj update prints the line to reinstall it.
 
 You can also download, verify and unpack it yourself as above, and point the `xj` link at the new folder.
