@@ -66,6 +66,9 @@ Xing Janus 會在你的電腦上讀檔、改檔、跑指令。它的守門層叫
 - **自己脫離的背景程序**：xj 結束時（包括被強制結束），會把它開的指令、MCP server 整組收掉。但指令自己脫離出去的程序（用了 `setsid`、`set -m`，或會自己轉成常駐程式的服務）收不到。在 Linux 的沙盒裡，它們會跟著指令一起結束；在 macOS 上會留下來，要自己用 `ps` 找出來結束。
   Windows 比較嚴（2026-10-22 實測）：指令開的每個程式都在同一個 job object 裡、脫離不了，**指令一結束就全部收掉**，
   包括視窗程式（`start` 開的也一樣）和 Gradle daemon 這種常駐程式；開著沙盒時也一樣（沙盒自己的 job object）。
+  例外是沒開沙盒、用 Microsoft Store 裝的 PowerShell 7 時（2026-11-05 實測）：Store 的程式自己在 Windows 給的 job object 裡，那個 job 准許子程序脫離，
+  所以它開的程式不在 xj 的 job object 裡。Ctrl-C、逾時時 xj 照父程序收（還在跑的 PowerShell 和它開的程式），指令結束之後留下的、父程序已經結束的程式收不到（跟 macOS 一樣）。
+  要一律收乾淨的話，PowerShell 7 請裝官方的 MSI（裝到 Program Files）。
   要留著用的程式（開發伺服器、模擬器、編輯器）請在 xj 外面自己開；已經開著的程式（例如指令只是叫瀏覽器開一個新分頁）不受影響。
 
 回報安全問題的方式見 [SECURITY.md](SECURITY.md)。

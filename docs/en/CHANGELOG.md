@@ -2,6 +2,81 @@
 
 Versions follow semver.
 
+## 0.1.4
+
+**Requires**: the same as 0.1.3 — macOS, Linux or Windows; Node 24 or later (on Windows, 24.20.0 or later is recommended); `ripgrep`. On Linux also bubblewrap, socat and sandbox-runtime 0.0.79;
+on Windows, Git for Windows (see `docs/en/install.md`).
+
+**Updating from 0.1.3**: run `xj update` (if you installed with Homebrew, use `brew upgrade xj`). Your config, keys and transcripts stay as they are.
+- The numbers in the first question of `xj setup` changed: 3 is Gemini and 4 is a local or other OpenAI-compatible service (in 0.1.3, 3 was Ollama).
+- If you connect a service on another machine over unencrypted `http://` and it needs a key: from this version on the key is not sent (it would go in plain text).
+  Use https; if you are sure, add `"allowPlainHttpKey": true` to `providers.<name>` in the config (see "Connecting other model services" in `docs/en/config.md`).
+- If your `~/.xing-janus/prices.json` was created by an older version, it has no Gemini prices (costs show as "unknown"): `xj doctor` says how to replace it.
+
+If you are still on 0.1.1 or 0.1.2, read the 0.1.3 section below first (the update is done by the old version's code, and there are a few things to avoid).
+
+**Verify after downloading** (keep the two files next to the archive):
+
+```bash
+shasum -a 256 -c xj-0.1.4-darwin.tar.gz.sha256
+minisign -Vm xj-0.1.4-darwin.tar.gz -P <your saved copy of the public key>
+```
+
+The Linux files are `xj-0.1.4-linux-x64.tar.gz` or `xj-0.1.4-linux-arm64.tar.gz` (check the SHA-256 with `sha256sum -c`); Windows is `xj-0.1.4-windows.zip`
+(verify it as in steps 1–2 of "Installing on Windows" in `docs/en/install.md`, with your saved copy of the public key). Then check that the `Trusted comment:` minisign prints
+reads `xing-janus v0.1.4 xj-0.1.4-<platform>…`; if not, do not install it (an old version renamed together with its signature passes both lines above).
+If this is your first install, follow `docs/en/install.md`, then run `xj setup`.
+
+New:
+
+- `xj mcp`: other programs (Claude Desktop, IDEs, a chat-app bridge you write) can call xj through MCP ([mcp-server.md](mcp-server.md)). What it may do follows `mcpServer` in the config:
+  read-only by default, nothing outside the sandbox, only the folder it was started in, spending $2 a turn / $10 a day (it stops at the limit); when relaxed, approvals are asked through MCP elicitation (keys masked, only "allow once" and "deny").
+  The sandbox is always required and the folder must have been trusted at the computer; `@path` mentions in the text it is given do not attach files
+- Gemini has a native adapter (it used to go through Google's OpenAI-compatible endpoint): choose 3 in `xj setup`, or set `XING_JANUS_GEMINI_API_KEY`; the new keys starting with `AQ.` work too
+  and are masked in transcripts. Thinking is sent back as received, so multi-turn tool calls do not break. A `providers.gemini` with a `baseURL` in the config keeps using the compatible endpoint.
+  With a free-tier key, Google uses what you send to improve its products (see "Gemini" in `docs/en/config.md`)
+- Choice 4 in the first question of `xj setup`: a local or other OpenAI-compatible service (Ollama, LM Studio, llama.cpp, vLLM, OpenRouter…). It lists Ollama and the local servers found on this computer,
+  with a last item for entering an address (or paste one right away), then asks for a name and whether a key is needed, so people who only use local models can finish the setup wizard
+  (before, you needed an Anthropic or OpenAI key to start xj and get to `/model`). Enter picks Ollama; the other servers found need their number
+  (on a shared computer, someone else's program may be listening on those ports)
+- Price table: limited-time prices (`until`, `after`), switched to the later price by date; the default price table includes the main Gemini models
+- The default limit of tool calls per turn went from 50 to 100 (`limits.toolCallsPerTurn` in the config)
+
+Fixed:
+
+- Security: keys are not sent over unencrypted http to another machine. Before, only the new key that `xj setup` or `/model` was about to store was held back; a key the same name already had
+  (keychain, key file, environment variable) still went to the new address in plain text (for example when re-running the setup with an `s` missing from the address). Starting xj, switching to it
+  inside xj, setting a key there, switching keys with `/key` and `xj doctor` all hold it back (see "Updating from 0.1.3" above for the setting)
+- Security: when `xj setup` or `/model` adds a service, the address is checked the way the config checks it: forms such as `HTTP://`, `http:/` and `http:\\` used to send the key in plain text
+  first and only fail at the config check at the end; addresses with a user name or password are refused
+- Security: platform names may not contain `--` (`anthropic--work` overwrote the Anthropic key named work) or be reserved names such as `prototype` and `con`;
+  `xj setup` checks the whole config before storing a key, and writes the config to a temporary file first, replacing the old one only after it checks out (before, a broken one made every later start report a config error)
+- Security: Gemini turns off the SDK's automatic continuation (when the service returned a continuation token, the SDK sent the whole conversation again by itself, billed every time, out of the budget's reach,
+  and retried by itself after a dropped connection): a reply with a token counts as cut off. Tool arguments are checked like the other two providers do (keys such as `__proto__` are dropped)
+- Security: OpenAI-compatible services (OpenAI, Ollama, OpenRouter…) no longer follow redirects either: a cross-site redirect used to send the whole conversation to the new place (not the key).
+  When Gemini or an OpenAI-compatible service answers with a redirect, the message says so, as with Anthropic (it used to say it could not connect)
+- Security: every row of `xj doctor` and the first line of the start screen turn line breaks from services and folder names into spaces (they could forge whole rows, such as a fake "Sandbox: blocks");
+  the first line and the "This folder" row mark bidi controls in folder names (they used to be printed as is, reversing the rest of the line and pushing the right-hand column in Windows Terminal)
+- Security: when step 3 of `xj setup` cannot reach a service, keys are masked in the reason (a service that put the Authorization header it received in its error message had the whole key printed);
+  listing the models waits at most 15 seconds (it used to wait forever if the service never answered)
+- Security: addresses ending in `.localhost` no longer count as this computer (Node resolves them through DNS): `/model` asks before switching to one
+- Windows: the sandbox sometimes failed to start ("could not bind a loopback listener outside the WFP permit range": the sandbox library tried only 5 ephemeral ports) → xj restarts it, up to 3 times
+- Windows: the Microsoft Store version of PowerShell 7 is found (used without the sandbox; with the sandbox on, the one in Program Files or the built-in 5.1 is used as before); the message about skipping PowerShell 7 is corrected.
+  The programs it starts are not in xj's job object (Store apps let child processes leave the job Windows gives them): on Ctrl-C or timeout they are stopped by parent, and programs left behind after the command ends are not (cerberus.md).
+  Execution aliases count only when they point into `%ProgramFiles%\WindowsApps` (security: an alias that a sandboxed command created in the working folder would otherwise be chosen later without the sandbox)
+- Price table: a limited-time entry whose regular price has a long-context rate but whose `after` has none is not used (after `until`, the long-context surcharge used to disappear and costs came out too low)
+- `xj setup`: when no model can be suggested (cannot connect, or the list is empty), there is no default like `ollama:` (the config rejects it, so pressing Enter failed the whole wizard);
+  an answer that is not in provider:model form is explained and asked again, and after three tries nothing is saved. The message when a service cannot be reached no longer ends with an extra period
+- English `xj doctor`: when a row joins two sentences, the second one starts in lowercase (it used to print "v0.1.3; The last…")
+- In the classic screen, making the window narrower made the terminal fold the old status bar into two rows; the top half stayed on screen (later output did not cover it) and, when widening again, was joined back and pushed into the middle: it is cleaned up now.
+  Only in terminals xj can tell refold lines like this (Windows Terminal, tmux, Terminal.app, iTerm2, VS Code, VTE-based ones such as GNOME Terminal, kitty, WezTerm, Ghostty, Alacritty, foot);
+  the old console host (conhost), terminals that do not refold such as xterm, and terminals xj cannot identify over SSH are unchanged (cleaning up there would delete the last lines of the conversation)
+- After `/model` switches, the platform is named too ("Now using Claude Sonnet 5.5 (anthropic, series sonnet)"); the `/resume` list shows `platform:model` and resuming names the platform: models with the same name on different platforms can be told apart
+- `budget.unknownRequestsPerTurn` in the config file: after how many requests with no known price in one turn xj stops and asks (still 10 by default; 0 turns it off, for example with a local service). The question itself now says how to turn it off
+- Help text shown while typing in xj no longer starts a row with closing punctuation (a closing bracket or the Chinese full stop) or ends a row with an opening bracket when it wraps
+- User docs: README, quick start, `config.md` (Gemini, limited-time prices, choice 4 of `xj setup`, `allowPlainHttpKey`, platform names), usage, privacy, troubleshooting;
+  `install.md` says Windows on arm64 has not been tested yet, and the Windows install and uninstall lines that edit PATH keep it as written (forms like `%USERPROFILE%` and the value type `REG_EXPAND_SZ` stay; the old lines turned it into `REG_SZ`)
+
 ## 0.1.3
 
 **Requires**: the same as 0.1.2 — macOS, Linux or Windows; Node 24 or later (on Windows, 24.20.0 or later is recommended); `ripgrep`. On Linux also bubblewrap, socat and sandbox-runtime 0.0.79;

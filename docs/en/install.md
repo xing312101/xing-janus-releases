@@ -77,7 +77,8 @@ and brew checks the downloaded file against the formula's SHA-256. To verify it 
 1. From the releases page, download your platform's `xj-<version>-<platform>.tar.gz`, `.sha256` and `.minisig`. `<platform>`:
    - macOS: `darwin` (one file for both Apple silicon and Intel)
    - Linux (including WSL): pick `linux-x64` or `linux-arm64` by CPU. If `uname -m` prints `x86_64`, pick x64; if it prints `aarch64`, pick arm64
-   - Windows: `xj-<version>-windows.zip` (one file for x64 and arm64; steps in "Installing on Windows" below). With WSL2, pick the Linux file as above
+   - Windows: `xj-<version>-windows.zip` (one file for x64 and arm64; steps in "Installing on Windows" below). With WSL2, pick the Linux file as above.
+     Windows on arm64 (for example Snapdragon laptops) has not been tested on real hardware yet: if something goes wrong, open an issue in the repo that hosts the releases page
 2. Check that the file is intact and really from the publisher:
 
    ```bash
@@ -153,17 +154,21 @@ First install what the "Windows" list above needs. In PowerShell:
    Expand-Archive xj-<version>-windows.zip -DestinationPath $programs -Force
    if (Test-Path $dir) { Remove-Item -Recurse -Force $dir }     # when updating: remove the old version
    Rename-Item "$programs\xj-<version>-windows" xj
-   $path = [Environment]::GetEnvironmentVariable('Path', 'User')
-   if (($path -split ';') -notcontains $dir) {                  # add to PATH only once
-     [Environment]::SetEnvironmentVariable('Path', ((@($path -split ';') + $dir) | Where-Object { $_ }) -join ';', 'User')
+   $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment', $true)
+   $path = $key.GetValue('Path', '', 'DoNotExpandEnvironmentNames')   # as written (forms like %USERPROFILE% not expanded)
+   if ((($path -split ';') | ForEach-Object { [Environment]::ExpandEnvironmentVariables($_) }) -notcontains $dir) {   # add to PATH only once
+     $key.SetValue('Path', ((@($path -split ';') + $dir) | Where-Object { $_ }) -join ';', 'ExpandString')
+     # tell programs already running (File Explorer) that PATH changed: set an environment variable and remove it (only this broadcasts)
+     [Environment]::SetEnvironmentVariable('XJ_PATH_CHANGED', '1', 'User'); [Environment]::SetEnvironmentVariable('XJ_PATH_CHANGED', $null, 'User')
    }
+   $key.Close()
    ```
 
    The folder has no version number, so for an update you repeat this step and PATH stays the same (with one folder per version, the old one comes first and `xj` runs the old version).
    Windows that are already open do not see the new PATH: open a new terminal window (if a new Windows Terminal tab still cannot find it, close Windows Terminal completely and reopen it);
    you are done when `xj --version` prints the version. cmd and PowerShell use `xj.cmd`; Git Bash uses `xj` in the same folder.
-   This snippet replaces forms like `%USERPROFILE%` in your PATH with the expanded paths (they work the same). To keep the original forms, search the Start menu for
-   "Edit environment variables for your account" and add `%LOCALAPPDATA%\Programs\xj` to Path instead.
+   This snippet edits PATH as written: forms like `%USERPROFILE%` and the value's type (`REG_EXPAND_SZ`) stay the same. You can also search the Start menu for
+   "Edit environment variables for your account" and add `%LOCALAPPDATA%\Programs\xj` to Path.
 4. For the sandbox, install sandbox-runtime for the whole computer with administrator rights and run `windows-install`, as in "Windows" above.
 5. Run `xj doctor`. Store the key with `xj setup` (it goes into Windows Credential Manager; if that fails, into a key file only you can read), or set the environment variable `XING_JANUS_ANTHROPIC_API_KEY`.
 
@@ -207,10 +212,15 @@ and `%LOCALAPPDATA%\xing-janus`, where xj keeps track of sandbox permissions; th
 $dir = "$env:LOCALAPPDATA\Programs\xj"
 Remove-Item -Recurse -Force $dir
 Remove-Item -Recurse -Force "$dir.old", "$dir.update", "$env:LOCALAPPDATA\Programs\xj-update.log", "$env:LOCALAPPDATA\xing-janus" -ErrorAction SilentlyContinue
-$path = [Environment]::GetEnvironmentVariable('Path', 'User')
-[Environment]::SetEnvironmentVariable('Path', (($path -split ';') | Where-Object { $_ -and $_ -ne $dir }) -join ';', 'User')
+$key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment', $true)
+$path = $key.GetValue('Path', '', 'DoNotExpandEnvironmentNames')   # like step 3 of the install: edit it as written
+$key.SetValue('Path', (($path -split ';') | Where-Object { $_ -and [Environment]::ExpandEnvironmentVariables($_) -ne $dir }) -join ';', 'ExpandString')
+$key.Close()
+[Environment]::SetEnvironmentVariable('XJ_PATH_CHANGED', '1', 'User'); [Environment]::SetEnvironmentVariable('XJ_PATH_CHANGED', $null, 'User')   # tell programs PATH changed
 cmdkey /delete:xing-janus-anthropic     # the key in Credential Manager (likewise for openai and others, and for each named key)
 ```
+
+The xj entry is removed from PATH even when it is written as `%LOCALAPPDATA%\Programs\xj`; the other entries stay as written.
 
 If you installed the sandbox, then in PowerShell with administrator rights:
 

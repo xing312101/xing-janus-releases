@@ -10,8 +10,9 @@ Xing Janus 用你自己的 API key，不用任何一家的訂閱登入（ChatGPT
 |---|---|---|
 | Anthropic | console.anthropic.com | 開一個專用的 key；建議設好用量上限 |
 | OpenAI | platform.openai.com | 開一個專用的 Project 和 key，設月預算 |
+| Gemini | aistudio.google.com | 建一把只限 Gemini API 的 key；不想被拿去改進產品、被人工審閱的程式碼用綁了帳單的專案（免費額度的會，見 config.md 的「Gemini」）；在 Cloud 設預算通知 |
 | Ollama | 不用 key | 裝好 Ollama，用 `OLLAMA_CONTEXT_LENGTH=32768` 啟動（預設的 4096 太小） |
-| 其他 OpenAI 相容的服務 | 看那個服務 | 本機的 LM Studio、llama.cpp、vLLM 不用 key；雲端的 OpenRouter 這類要 key。在 xj 裡用 `/model` 選或新增（見第 3 步） |
+| 其他 OpenAI 相容的服務 | 看那個服務 | 本機的 LM Studio、llama.cpp、vLLM 不用 key；雲端的 OpenRouter 這類要 key。設定精靈第一題選 4，或在 xj 裡用 `/model` 選、新增（見第 3 步） |
 
 同一家要分開用好幾把 key 的話，見 [config.md](config.md) 的「同一家好幾把 key」。
 
@@ -21,7 +22,7 @@ Xing Janus 用你自己的 API key，不用任何一家的訂閱登入（ChatGPT
 xj setup
 ```
 
-它會依序問：用哪一家、金鑰、要不要再加一把、預設的模型、回覆的語言、要不要提示音（預算不問，要改就改設定檔）。金鑰不會顯示在畫面上，也不會留在指令歷史裡：
+它會依序問：用哪一家（1 Anthropic、2 OpenAI、3 Gemini、4 本機或其他 OpenAI 相容的服務：選 4 的話先列 Ollama 和這台找到的本機伺服器、最後一項自己填網址，再問名字、要不要金鑰）、金鑰、要不要再加一把、預設的模型、回覆的語言、要不要提示音（預算不問，要改就改設定檔）。金鑰不會顯示在畫面上，也不會留在指令歷史裡：
 macOS 由 `security` 指令請你貼上、存進鑰匙圈；Windows 存進認證管理員；其他的存成只給你自己讀的金鑰檔。最後會自動跑 `xj doctor`。
 
 第一次打 `xj` 時會先問介面的語言、顯示使用提醒，同意之後自動跑設定精靈。

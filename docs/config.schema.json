@@ -68,6 +68,11 @@
         "perTurnUsd": { "type": "number", "minimum": 0 },
         "perDayUsd": { "type": "number", "minimum": 0 },
         "perMonthUsd": { "type": "number", "minimum": 0 },
+        "unknownRequestsPerTurn": {
+          "description": "一輪裡幾個查不到價格的請求就停下來問（算不出花了多少錢）；0 是不問",
+          "type": "integer",
+          "minimum": 0
+        },
         "cycleStartDay": {
           "description": "帳單週期從每月幾號開始（算本月花費用）",
           "type": "integer",
@@ -278,6 +283,39 @@
         }
       }
     },
+    "mcpServer": {
+      "description": "xj 當 MCP server（xj mcp）：別的程式透過 MCP 叫 xj 時能做什麼。沒寫的預設：唯讀、沙盒外一律不行、只有啟動 xj mcp 的那個資料夾",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "description": "透過 MCP 用哪個模式：read-only（預設）、plan、normal、auto-edit、full-auto。放寬的話叫 xj 的程式能改你的專案、在沙盒裡跑指令",
+          "type": "string",
+          "enum": ["read-only", "plan", "normal", "auto-edit", "full-auto"]
+        },
+        "outsideSandbox": {
+          "description": "沙盒外的動作：never（預設，一律拒絕）或 ask（用 elicitation 問；按的人不在電腦前面，帳號或手機被別人拿到時擋不住）",
+          "type": "string",
+          "enum": ["never", "ask"]
+        },
+        "projects": {
+          "description": "名字 → 資料夾（完整路徑或 ~ 開頭）：client 用名字選。資料夾要是信任過的",
+          "type": "object",
+          "propertyNames": { "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$" },
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        },
+        "anyProject": { "description": "client 可以直接傳資料夾的路徑（照樣只能是信任過的）", "type": "boolean" },
+        "budget": {
+          "description": "透過 MCP 時另外的上限（美元，要大於 0）：沒寫的是每輪 $2、每天 $10；跟 budget 一起算、取比較低的；每天的是全部的花費（終端機用的也算）。到了上限就停，不問要不要繼續",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "perTurnUsd": { "type": "number", "exclusiveMinimum": 0 },
+            "perDayUsd": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        }
+      }
+    },
     "evals": {
       "type": "object",
       "additionalProperties": false,
@@ -295,7 +333,8 @@
           "kind": { "type": "string", "enum": ["chat-completions"] },
           "baseURL": { "type": "string", "pattern": "^https?://" },
           "keyName": { "description": "鑰匙圈的項目名稱；沒寫就是 xing-janus-<名稱>", "type": "string", "minLength": 1 },
-          "enabled": { "type": "boolean" }
+          "enabled": { "type": "boolean" },
+          "allowPlainHttpKey": { "description": "baseURL 是沒加密的 http、又不在這台時照樣送金鑰（金鑰以明文送出；預設不送）", "type": "boolean" }
         }
       }
     },

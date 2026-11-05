@@ -110,17 +110,18 @@ MCP server 也在沙盒外跑。指令能做你的帳號能做的任何事：刪
 
 ## 換平台、換模型（/model）
 
-打 `/model`（不帶參數）先選平台、再選它的模型。平台有三種：Anthropic、OpenAI、OpenAI 相容的服務（本機的 Ollama、LM Studio、llama.cpp、vLLM…，
-雲端的 OpenRouter、Gemini 的相容端點…）。選單上標出：
+打 `/model`（不帶參數）先選平台、再選它的模型。平台有四種：Anthropic、OpenAI、Gemini、OpenAI 相容的服務（本機的 Ollama、LM Studio、llama.cpp、vLLM…，
+雲端的 OpenRouter…）。選單上標出：
 
 - 在這台（`localhost`、`127.0.0.1`、`::1`），還是連到哪一台（網址的主機；區網裡別台電腦的 Ollama 也是「連到」別台）
-- 金鑰放在哪裡、還沒設（Anthropic、OpenAI 要金鑰；OpenAI 相容的服務可以不用）
+- 金鑰放在哪裡、還沒設（Anthropic、OpenAI、Gemini 要金鑰；OpenAI 相容的服務可以不用）
 - 這台找到的本機伺服器：打開選單時問一下這台常見的埠（Ollama 11434、LM Studio 1234、llama.cpp 8080、vLLM 8000，只問這台、等不到一秒），
   回得出模型清單的列出來；選了才寫進設定檔的 `providers`
 - 最後一項「新增一個 OpenAI 相容的服務」：名字、網址、金鑰（可以不給），查得到模型清單才寫進設定檔
 
 還沒設金鑰的那一家（或服務不接受沒有金鑰的請求，例如 OpenRouter）：選了就當場貼上金鑰。畫面上只顯示 `•`，不進輸入的歷史、對話紀錄；
 先用它查一次模型清單，查得到才存，存的地方跟 `xj setup` 一樣（鑰匙圈、認證管理員，存不進去的話是只給你讀的金鑰檔）。
+網址是沒加密的 `http://`、又不在這台的：金鑰會以明文送出，xj 不送、也不在這裡設（見 config.md 的「接別的模型服務」）。
 輸入不是終端機（管線）的時候不能這樣設，用 `xj setup`。同一家選的是有名字的那一把（`keys`）的話也不能在這裡設：照「同一家好幾把 key」放好那一把。
 
 換到別的平台之前，先查一次那一家的模型清單：連不上、金鑰被拒就不換，照舊用原本的。對話有內容的話先問你：之前的對話（包括它讀過的檔案內容）
@@ -192,6 +193,11 @@ git diff | xj -p "幫這段改動寫一行 commit 訊息"
 同一家好幾把 key 的話，`xj -p --key work "…"` 用 work 那一把（沒加就照設定檔的 `keys` 選）；那一把被拒時，`keys.<廠商>.onReject` 是 `"ask"` 的話一律不換（沒有人能回答）。
 
 從管線傳進來的內容是資料，不是你打的問題：裡面的 `@路徑` 不會附加檔案。要附加，寫在 `-p` 的問題裡（`git diff | xj -p "對照 @docs/style.md 檢查這段改動"`）。
+
+## 讓別的程式叫 xj（MCP）
+
+`xj mcp` 讓 Claude Desktop、IDE、你自己寫的通訊軟體橋接這類程式透過 MCP 叫 xj 做事。預設唯讀、只有啟動它的那個資料夾；
+能做什麼、能用哪些專案在設定檔的 `mcpServer` 自己決定。怎麼接、放寬的風險、給插件的介面：[mcp-server.md](mcp-server.md)。
 
 ## 狀態列
 

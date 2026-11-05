@@ -17,8 +17,8 @@
 | `screen` | `fullscreen` | 畫面：`fullscreen` 是全螢幕模式（寬的視窗右邊放待辦清單和目前的狀態，PageUp／PageDown 和滾輪捲動）；`classic` 是一般模式（終端機自己捲動、搜尋、選取複製）。全螢幕開不了的時候（輸出不是終端機、舊的 Windows 主控台）自動用一般模式。`/tui` 切換時會寫進來 |
 | `enterToApprove` | `true` | 詢問時按 Enter 就是「是」（預設開，跟 Claude Code 一樣；寫 `false` 就一律要按 y）（網域的詢問是「允許一次」）。危險的指令、還沒看完的內容、永久允許的確認照樣要按 `y`；詢問剛出現的 0.5 秒內的 Enter 不算（可能是你剛好在按）。信任資料夾的問題不能用 Enter |
 | `statusBar.fields` | `model`、`key`、`effort`、`mode`、`sandbox`、`context`、`todo`、`day-cost`、`month-cost`、`progress` | 狀態列顯示哪些欄位，照重要程度排：視窗太窄時從最後面開始省略。另外有 `session-cost`（這次對話的花費）。`todo` 是待辦清單（沒有清單、或全部完成時不佔位置；2026-10-22 加的，之前就自己寫了這一項的，要自己加上 `todo` 才看得到）。`key` 是同一家好幾把 key 的話現在用哪一把（只有一把的話不佔位置；2026-10-29 加的，自己寫了這一項的一樣要自己加） |
-| `budget` | 每輪 $5、每天 $30、每月 $100、帳單週期從 1 號開始 | `perTurnUsd`、`perDayUsd`、`perMonthUsd`（美元），`cycleStartDay`（帳單週期從每月幾號開始，1～28）。到 80% 提醒、到 100% 停下來問。上限是拿**預估**的花費來比的（本機價格表 × 用量），不是服務商的帳單；填 0 等於關掉那一項。`xj setup` 不會問你這個 |
-| `limits` | 每輪 50 次工具呼叫、每次請求最多輸出 64000 token | `toolCallsPerTurn`：每輪最多幾次工具呼叫，碰到就停下來問你。`maxOutputTokens`（至少 1024）：每次請求的輸出上限，不會超過模型自己的上限；碰到它不會停下來問（回覆被截斷時提醒一聲，被截斷的工具呼叫不執行） |
+| `budget` | 每輪 $5、每天 $30、每月 $100、帳單週期從 1 號開始 | `perTurnUsd`、`perDayUsd`、`perMonthUsd`（美元），`cycleStartDay`（帳單週期從每月幾號開始，1～28）、`unknownRequestsPerTurn`（一輪裡幾個查不到價格的請求就停下來問，預設 10：算不出花了多少錢，金額的上限管不到它們；用本機的服務不想被問的話填 0，或在價格表替那個模型填 0）。到 80% 提醒、到 100% 停下來問。上限是拿**預估**的花費來比的（本機價格表 × 用量），不是服務商的帳單；填 0 等於關掉那一項。`xj setup` 不會問你這個 |
+| `limits` | 每輪 100 次工具呼叫、每次請求最多輸出 64000 token | `toolCallsPerTurn`：每輪最多幾次工具呼叫，碰到就停下來問你。`maxOutputTokens`（至少 1024）：每次請求的輸出上限，不會超過模型自己的上限；碰到它不會停下來問（回覆被截斷時提醒一聲，被截斷的工具呼叫不執行） |
 | `permissions` | 每一項都是空的（內建的白名單、危險清單、機密檔照樣生效） | **內建的一直都在**（有哪些見下面「內建的白名單、危險清單、機密檔」），這裡只寫你要增減的：`allow`／`allowRemove`（白名單）、`danger`／`dangerRemove`（危險清單，拿掉的寫名稱）、`secretFiles`／`secretFilesRemove`（機密檔）。`extraReadable`：工作目錄以外也讓它讀的資料夾（家目錄本身、放憑證的資料夾像 `~/.ssh`、`~/.aws`，和包含它們的上層，都不採用，開場會講）。沒有要放寬或收緊的話不用寫 |
 | `sandbox.toolchainReadable` | `~/.gitconfig`、`~/.config/git`、`~/.cargo`、`~/.rustup`、`~/.pyenv`、`~/.nvm`、`~/.volta`、`~/development/flutter`、`~/fvm`、`~/.pub-cache`、`~/.gradle`、`~/.android`、`~/Library/Android/sdk`（不存在的略過） | 沙盒裡的指令讀得到的工具鏈（工作目錄以外；家目錄的其他地方讀不到）。`~/.gitconfig`、`~/.config/git` 只有 `sandbox.gitconfig` 是 `"full"` 時才開（預設的 `"filtered"` 給沙盒的是過濾過的那一份）。Windows（2026-10-21）：開放一個資料夾要逐檔改權限，所以用預設值的時候照專案的種類開（有 `package.json` 才開 npm 全域、有 `build.gradle` 這類 Gradle 檔才開 Android SDK 和 `~/.gradle`…；還看不出是哪種專案時（全新的空資料夾），Node、Python 的照開；Flutter 專案（`pubspec.yaml`）不開 Flutter SDK、Pub cache，它底下的 `android/` 也不算 —— flutter、dart 一律在沙盒外跑，開了只會讓開沙盒多等），大的工具鏈只開用得到的部分；自己寫了這一項或 `writable` 的話照你寫的開，xj 不再自己加 |
 | `sandbox.writable` | `~/.pub-cache`、`~/.gradle` | 沙盒裡的指令寫得到的地方（工作目錄和暫存資料夾一定寫得到，不用寫） |
@@ -29,14 +29,15 @@
 | `sandbox.allowUnsandboxedCommands` | `true` | 沙盒裡跑不了的工具（flutter 這類）能不能要求在沙盒外跑那一個指令（每次都問），見下面「沙盒裡跑不了的工具」 |
 | `sandbox.autoFixWritable` | `false` | Windows：開沙盒時發現沙盒的帳號寫得進 PATH 上的地方，不問就用系統管理員權限擋（照樣跳 UAC）。`false` 是問你一次，選「永久允許」就是寫成 `true`；`/permissions` 拿得掉，見 usage.md 的「全部不問模式」 |
 | `sandbox.writablePrograms` | `ask` | Windows：沙盒外會跑的程式（xj 的 git、Git Bash、`excludedCommands`、flutter 這類、MCP server、搜尋用的 rg）放在沙盒寫得進去的地方時怎麼辦 —— `"ask"` 開沙盒時問一次、這次對話有效，`"deny"` 不問、不在沙盒外跑（搜尋改在沙盒裡跑），`"allow"` 不問、照樣跑（每次用到照樣標紅）；選「永久允許」就是寫成 `"allow"`，`/permissions` 拿得掉，見 cerberus.md |
-| `windows` | `{}` | Windows 才用（2026-10-20）：`gitBash` 是 Git Bash 的 `bash.exe` 完整路徑、`powershell` 是 `pwsh.exe` 或 `powershell.exe` 的完整路徑。沒寫就自己找（Git Bash 照 PATH 上的 git.exe 和預設的安裝位置；PowerShell 先找 7 再用內建的）。不能是專案裡的檔案，也不能是 `C:\Windows\System32\bash.exe`（那是 WSL） |
+| `windows` | `{}` | Windows 才用（2026-10-20）：`gitBash` 是 Git Bash 的 `bash.exe` 完整路徑、`powershell` 是 `pwsh.exe` 或 `powershell.exe` 的完整路徑。沒寫就自己找（Git Bash 照 PATH 上的 git.exe 和預設的安裝位置；PowerShell 先找 7 再用內建的；Microsoft Store 裝的 7 也算，沙盒開著時不用它）。不能是專案裡的檔案，也不能是 `C:\Windows\System32\bash.exe`（那是 WSL） |
 | `env.passthrough` | `JAVA_HOME`、`ANDROID_HOME` | 指令跑在乾淨的環境裡：只留 `PATH`、`HOME`、`LANG`、`TERM`、`TMPDIR`（Windows 另外留系統要的那幾個，例如 `SystemRoot`），加上這裡列的；金鑰、token 這類不給 |
 | `keyFiles` | 空的（照環境變數 → 鑰匙圈或認證管理員找） | 沒有鑰匙圈的環境：廠商 → 金鑰檔。路徑要是絕對路徑或 `~` 開頭（Windows 要有磁碟代號，例如 `C:\keys\anthropic.txt`）：相對路徑會從工作目錄讀，設定檔不收。這些路徑自動算成機密檔。同一家好幾把的話鍵寫成「廠商:名字」（例如 `anthropic:work`） |
 | `keys` | 空的（每一家一把） | 同一家好幾把 key：這個資料夾用哪一把、被拒時怎麼辦、某一把另外的上限。見下面「同一家好幾把 key」 |
-| `providers` | 內建 `openai`（`https://api.openai.com/v1`）、`ollama`（`http://localhost:11434/v1`） | 改 `baseURL`、用 `enabled: false` 關掉，或加自己的服務（`kind: "chat-completions"`、`baseURL`、`keyName`）。OpenAI 找不到金鑰就不接；自己的服務沒有金鑰也接（本機的服務常常不用）；Ollama 不用金鑰 |
+| `providers` | 內建 `openai`（`https://api.openai.com/v1`）、`ollama`（`http://localhost:11434/v1`）、`gemini`（Google 的 Gemini API，見下面「Gemini」） | 改 `baseURL`、用 `enabled: false` 關掉，或加自己的服務（`kind: "chat-completions"`、`baseURL`、`keyName`、`allowPlainHttpKey`，見下面「接別的模型服務」）。OpenAI、Gemini 找不到金鑰就不接；自己的服務沒有金鑰也接（本機的服務常常不用）；Ollama 不用金鑰。`gemini` 寫了 `baseURL` 的話改走那個網址的 OpenAI 相容端點 |
 | `capabilities` | 空的（照各家的模型清單查到的；查不到的用保守的預設：上下文 32k、輸出 8k，狀態列標 `?`） | 覆寫模型的能力（上下文、最大輸出、工具組…），鍵是「廠商:模型」：`contextTokens`、`maxOutputTokens`、`compactAtTokens`（上下文到多少 token 就自動摘要；沒寫的話是 15 萬，但不超過上下文的 80%）、`imageInput`（收不收圖片）、`tools`（`"none"` 是不送工具；`"reliable"`、`"unreliable"` 目前沒有差別；Anthropic 的模型不看這一項）、`parallelToolCalls`（目前沒有作用）、`toolset`（`"full"`，或 `"reduced"`：只給 read、search、edit）。`todoTool`：給不給這個模型待辦清單的工具（`todo_write`）；`webFetch`：給不給抓網頁的工具（`web_fetch`）。預設每個模型都給，不想讓某個模型用就寫 `false`。`subagents`：給不給子代理的工具（`agent`），預設也給，不想讓某個模型用就寫 `false` |
 | `subagents` | 同時 4 個、30 個工具呼叫、10 分鐘 | 子代理（見 usage.md 的「子代理」）：`maxConcurrent` 同時跑幾個（只有唯讀的 explore 會同時跑）、`maxToolCalls`、`timeoutMinutes` 每個的上限（到了就叫它交報告）、`model` 預設用的模型（沒寫跟主對話同一個） |
 | `mcp.servers` | 空的（不接任何 MCP server） | MCP server：`command`、`args`、`env`、`description`、`sandbox`、`autoApprove`、`readOnly`、`timeoutSec`（一次呼叫最多等幾秒，預設 600）。`env` 裡名稱看起來就是金鑰的（結尾是 `_KEY`、`_TOKEN`、`_SECRET`、`_PASSWORD` 這些），值會被當成金鑰：server 的輸出、錯誤訊息、對話紀錄裡出現就遮掉。Windows 的沙盒現在跑不了 MCP server（stdin 接不進去）：沙盒開著的話要設 `sandbox: false`（在沙盒外、以你的權限跑） |
+| `mcpServer` | 唯讀、沙盒外一律不行、只有啟動 `xj mcp` 的那個資料夾、花費每輪 $2／每天 $10 | 別的程式透過 MCP 叫 xj（`xj mcp`）時能做什麼：`mode`、`outsideSandbox`、`projects`、`anyProject`、`budget`。放寬之前先看 [mcp-server.md](mcp-server.md) 的風險 |
 | `anthropic` | `fallback: default`、`prefixMismatch: drop_block` | Anthropic 專用的設定。`fallback`：`"default"` 是請求被安全分類器擋下時，讓 Anthropic 的伺服器換一個模型再試、改由它回答（狀態列標「→ 實際回答的模型」，花費照它的價格算），`"off"` 是不換、不再試。`prefixMismatch`：前面的對話改過（例如摘要之後）、跟模型的推理內容對不上時，`"drop_block"` 是丟掉那一段推理照常送，`"error"` 是直接報錯（測試用） |
 | `evals.budgetUsd` | `2` | 開發用：每次評測最多花多少（美元）。評測（`node evals/run.ts`）只在原始碼的 repo 裡，發佈的版本沒有 |
 | `sessions.retentionDays` | `30` | 對話紀錄保留幾天：每次啟動自動清掉更舊的（`xj sessions prune` 也能手動清） |
@@ -162,20 +163,37 @@ xj 就問你一次（標紅寫「在沙盒外用你的權限跑」和實際跑�
 - 設成 `"auto"` 之前先想兩件事：被限流時自動輪流用好幾把 key 繞過上限，**可能違反服務商的條款**（請先看各家的條款）；換過去之後，花費記在那一把的帳上。`xj doctor` 也會提醒。
 - 子代理用跟主對話同一把。`xj -p` 和評測（開發用，`node evals/run.ts --key work`）也能加 `--key`。`xj doctor` 每一把各一列（在不在、放在哪裡、連不連得上）。
 
+## Gemini
+
+內建，連 Google 的 Gemini API（原生的轉接層：thought signature 原樣帶回，連續好幾輪的工具呼叫也不會壞）。
+
+- **金鑰**：在 Google AI Studio（或 Google Cloud 主控台）建一把只限 Gemini API 的金鑰。`xj setup` 第一題選 3（Gemini）存起來，或設環境變數 `XING_JANUS_GEMINI_API_KEY`、
+  鑰匙圈（認證管理員）的 `xing-janus-gemini`。不要用 `GEMINI_API_KEY`、`GOOGLE_API_KEY`：其他工具也會讀它們（xj 不讀）。`AQ.` 開頭的新金鑰、`AIza` 開頭的舊金鑰都可以。
+- **模型**：`gemini:gemini-flash-latest`（Google 的別名，永遠指到最新的 Flash）、`gemini:gemini-3.5-flash-lite`、`gemini:gemini-3.1-pro-preview`…；
+  `/model` 列出這把金鑰能用的（語音、圖片、音樂這類不是拿來對話的不列）。
+- **推理強度**：Gemini 3 起是 `low`、`high`（`/effort`，預設 `high`）；2.5 照伺服器的預設。模型想的時候 Google 有時會回一段思考的摘要，xj 拿它的開頭當進度顯示。
+- **送出去的內容**：金鑰所屬的 Cloud 專案綁了帳單（付費）的話，Google 不拿你送的內容改進產品；**免費額度的金鑰會**，也可能有人工審閱（Gemini API 的附加條款）。
+  不想被拿去改進產品、被人工審閱的程式碼用付費的金鑰；完全不能送出去的程式碼不要用雲端的模型（改用本機的）。
+- **價格**：預設價格表有主要的幾個 Gemini 模型（抄自 Google 的價格頁）。限期的優惠價標了用到哪一天（`until`）和之後的正式價（`after`），xj 照日期自己換（見下面「限期的優惠價」）。
+  你的 `~/.xing-janus/prices.json` 是舊版的 xj 建的話沒有 Gemini，花費會顯示「未知」：`xj doctor` 會講怎麼換成新的。
+- **以前接相容端點的**（`providers.gemini` 寫了 `baseURL`，這份文件以前的寫法）：照舊走相容端點。要改用原生的，把 `providers.gemini` 拿掉。
+  Google 的論壇上有人回報：AI Studio 現在發的 `AQ.` 開頭的金鑰在相容端點會失敗（`Multiple authentication credentials received`）。
+
 ## 接別的模型服務
 
 只要是 OpenAI 相容的 API，加一個 `providers` 就能用，不用改程式。金鑰放環境變數
 `XING_JANUS_<名稱大寫>_API_KEY`、鑰匙圈或認證管理員（項目名是 `xing-janus-<名稱>`），或 `keyFiles` 指的檔案。
-`xj setup` 只問 Anthropic、OpenAI、Ollama：自己的服務的金鑰在 xj 裡當場設（`/model` 選它、或新增它的時候貼上），
+`xj setup` 問 Anthropic、OpenAI、Gemini，或本機和其他 OpenAI 相容的服務（第 4 項：先列 Ollama、這台找到的本機伺服器，最後一項自己填網址；再問名字、要不要金鑰）；之後再加的服務，金鑰在 xj 裡當場設（`/model` 選它、或新增它的時候貼上），
 或自己存（macOS：`security add-generic-password -s xing-janus-<名稱> -a "$USER" -w`；Windows：`cmdkey /generic:xing-janus-<名稱> /user:xj /pass`）。
 也可以在 xj 裡加：`/model` 選單的最後一項「新增一個 OpenAI 相容的服務」，或選「這台找到的」本機伺服器（usage.md 的「換平台、換模型」）。
 查得到模型清單才寫進這裡的 `providers`（只寫 `kind` 和 `baseURL`）；金鑰當場設的話，存法跟 `xj setup` 一樣。
+名字只能用小寫英文、數字和 `-`（小寫英文開頭、最多 32 個字），不能有 `--`（有名字的金鑰用它分開，會跟別家的金鑰撞在一起）；
+`prototype`、`constructor`、`con`、`nul` 這類保留的名字不收（設定檔、Windows 的檔名用不了）。
 
 ```json
 {
   "providers": {
     "openrouter": { "kind": "chat-completions", "baseURL": "https://openrouter.ai/api/v1" },
-    "gemini": { "kind": "chat-completions", "baseURL": "https://generativelanguage.googleapis.com/v1beta/openai" },
     "local": { "kind": "chat-completions", "baseURL": "http://localhost:8080/v1" }
   },
   "capabilities": {
@@ -190,12 +208,31 @@ xj 就問你一次（標紅寫「在沙盒外用你的權限跑」和實際跑�
 
 1. **能力表要自己填。** 查不到模型能力時用的是保守預設（**32k 上下文**、8k 輸出）。所以 1M 上下文的模型
    不寫 `capabilities` 的話只會被當成 32k。模型 id 帶斜線沒問題。
-2. **花費會顯示「未知」。** 花費是查 `~/.xing-janus/prices.json`，自己的服務要自己補一筆
+2. **花費會顯示「未知」。** 花費是查 `~/.xing-janus/prices.json`（格式見下面「限期的優惠價」那一段的例子），自己的服務要自己補一筆
    （本機模型就全部填 0，不然一輪裡查不到價格的請求累積到 10 個，就會停下來問你要不要繼續）。
 3. **本機模型建議降級**：`"toolset": "reduced"`（只給 read、search、edit）。
    Ollama 會自動這樣（小模型常常不會正確呼叫工具），但「自己的服務」（LM Studio、llama.cpp、vLLM…）會被當成雲端 API，要自己寫。
 
 本機的服務（llama.cpp 的 `llama-server`、vLLM、LM Studio）用 `http://localhost:<埠>/v1` 就好，
 不用金鑰；`http://` 只對 localhost 不會被警告。
+沒加密的 `http://`、又不在這台的（區網裡別台電腦的 vLLM 這種）：金鑰會以明文送出，xj 不送（開 xj、在 xj 裡換過去、當場設金鑰、`xj doctor` 都一樣），
+不用金鑰的服務照常用。真的要送的話，在那一家加上 `"allowPlainHttpKey": true`（同一個網路上的人看得到金鑰）。
 llama.cpp 的 `llama-server` 沒加 `--alias` 的話，模型的名字就是 `-m` 給的檔案路徑（例如 `C:\models\qwen2.5-7b-instruct-q4_k_m.gguf`）：
 照樣選得到、記得住，嫌長的話開的時候加 `--alias qwen`，之後用 `/model llamacpp:qwen` 選它（`llamacpp` 是 `/model` 找到它時取的名字，自己加的照你取的）。
+
+## 限期的優惠價
+
+價格表（`~/.xing-janus/prices.json`）裡，一個模型的那一筆可以標「優惠價用到哪一天」：這一筆的單價（`inputPerMTok` 這些）用到 `until` 那一天為止，
+之後照 `after` 裡的單價。日期照 UTC 算（官方寫的多半是美國時間：UTC 會早幾個小時換成之後的單價，寧可估多）。
+兩個要一起寫；寫錯的話那一筆不用（等於沒有價格），開場和 `xj doctor` 會講。例如預設價格表裡的這一筆（在 `providers.gemini` 底下）：
+
+```json
+"gemini-4-argon": {
+  "inputPerMTok": 2, "outputPerMTok": 10, "cacheReadPerMTok": 0.1,
+  "until": "2026-11-30",
+  "after": { "inputPerMTok": 4, "outputPerMTok": 20, "cacheReadPerMTok": 0.2 },
+  "source": "https://aistudio.google.com/docs/pricing", "asOf": "2026-11-04"
+}
+```
+
+`after` 也可以有自己的 `longContext`（超過門檻的那一組單價）；沒寫的話之後就沒有長上下文的另一組價格。

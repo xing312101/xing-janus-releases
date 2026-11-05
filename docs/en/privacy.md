@@ -2,13 +2,17 @@
 
 ## Where it goes
 
-- What you type, the file contents it reads and the output of commands are sent to the model service you chose (Anthropic, OpenAI, Gemini, or a local Ollama), under that service's terms.
+- What you type, the file contents it reads and the output of commands are sent to the model service you chose (Anthropic, OpenAI, Gemini, a local Ollama, or another OpenAI-compatible service you connected), under that service's terms.
+  With a free-tier Gemini key, Google uses what you send to improve its products ("Gemini" in config.md).
 - Xing Janus itself collects nothing: no telemetry, no crash reports, no automatic update checks. Its only outside connections are the model APIs, the domains you allow, and GitHub when you run `xj update` (it only looks up the version and downloads the release files; it sends no data).
 - Fetching web pages (`web_fetch`): the website sees the full URL, your IP address and the User-Agent `xing-janus/<version>`; no cookies and no login details are sent.
   What it fetches is treated like a file it read: it is sent to the model and saved in the session log. URLs are not sent anywhere else to be checked.
 - Switching platforms with `/model`: the conversation so far (including file contents it read and command output) is handed over as text to that platform, and everything after it goes there too. If the conversation has content, xj asks first and says which machine it goes to (it does not ask for a platform on this computer: the conversation stays on it).
 - Subagents: they use the same provider as the main conversation; if you name another provider's model, the instructions and whatever it reads go to that provider.
-- Before anything is sent, keys in known formats (`sk-ant-`, `sk-proj-`, `AIza`, `ghp_`, `AKIA`…) are masked. That is a last line of defense; secret files cannot be read in the first place.
+- When other programs call xj through `xj mcp`: replies, what it did, and the questions that need your approval (the full command or diff) are handed to the program calling it (for example Claude Desktop or a chat-app bridge you wrote),
+  and where they go next is up to that program (a bridge sends them to the chat app). Keys in known formats are masked before they are handed over ([mcp-server.md](mcp-server.md)).
+- If a model service answers with a redirect (3xx), xj does not follow it: neither the key nor the conversation goes along to another place. Keys are not sent over unencrypted http to another machine either (unless you set `allowPlainHttpKey`; "Connecting other model services" in config.md).
+- Before anything is sent, keys in known formats (`sk-ant-`, `sk-proj-`, `AIza`, `AQ.`, `ghp_`, `AKIA`…) are masked. That is a last line of defense; secret files cannot be read in the first place.
 
 ## Where it is stored
 

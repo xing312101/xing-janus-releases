@@ -66,6 +66,9 @@ Fetching web pages (`web_fetch`) is a connection xj makes itself, outside the sa
 - **Background processes that detach themselves**: when xj quits (including when it is force-quit), it stops the commands and MCP servers it started, as whole groups. But processes a command detaches on purpose (with `setsid` or `set -m`, or services that turn themselves into daemons) cannot be reached. In the Linux sandbox they end together with the command; on macOS they are left running, and you need to find and stop them with `ps`.
   Windows is stricter (tested 2026-10-22): every program a command starts is in the same job object and cannot leave it, so **everything stops as soon as the command ends**,
   including windowed programs (also those started with `start`) and long-running ones such as the Gradle daemon; the same with the sandbox on (it has its own job object).
+  The exception is the Microsoft Store version of PowerShell 7 with the sandbox off (tested 2026-11-05): Store apps run in a job object Windows gives them, which lets child processes leave it,
+  so the programs it starts are not in xj's job object. On Ctrl-C or timeout xj stops the process tree by parent (the running PowerShell and what it started); programs left behind after the command ends, or whose parent has already exited, are not stopped (as on macOS).
+  To have everything stopped, install PowerShell 7 with the official MSI (into Program Files).
   Start programs you want to keep (dev servers, emulators, editors) yourself, outside xj; programs that are already running (for example when a command only asks the browser to open a new tab) are not affected.
 
 How to report a security issue: see [SECURITY.md](SECURITY.md).

@@ -77,7 +77,8 @@ formula 由 tap 自己的 workflow 照這個發佈頁面最新的版本更新：
 1. 到 releases 頁面下載你那個平台的 `xj-<版本>-<平台>.tar.gz`、`.sha256` 和 `.minisig`。`<平台>`：
    - macOS：`darwin`（Apple 晶片和 Intel 共用一個）
    - Linux（含 WSL）：照 CPU 選 `linux-x64` 或 `linux-arm64`。`uname -m` 印出 `x86_64` 就選 x64，`aarch64` 就選 arm64
-   - Windows：`xj-<版本>-windows.zip`（x64 和 arm64 共用一個；步驟見下面「Windows 的安裝」）。用 WSL2 的話照上面選 Linux 的檔案
+   - Windows：`xj-<版本>-windows.zip`（x64 和 arm64 共用一個；步驟見下面「Windows 的安裝」）。用 WSL2 的話照上面選 Linux 的檔案。
+     arm64 的 Windows（例如 Snapdragon 的筆電）還沒實際測過：碰到問題請在發佈頁面所在的 repo 開 issue
 2. 確認檔案沒壞、而且是發佈者發的：
 
    ```bash
@@ -153,16 +154,20 @@ formula 由 tap 自己的 workflow 照這個發佈頁面最新的版本更新：
    Expand-Archive xj-<版本>-windows.zip -DestinationPath $programs -Force
    if (Test-Path $dir) { Remove-Item -Recurse -Force $dir }     # 更新的時候：拿掉舊版
    Rename-Item "$programs\xj-<版本>-windows" xj
-   $path = [Environment]::GetEnvironmentVariable('Path', 'User')
-   if (($path -split ';') -notcontains $dir) {                  # PATH 只加一次
-     [Environment]::SetEnvironmentVariable('Path', ((@($path -split ';') + $dir) | Where-Object { $_ }) -join ';', 'User')
+   $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment', $true)
+   $path = $key.GetValue('Path', '', 'DoNotExpandEnvironmentNames')   # 原本的寫法（%USERPROFILE% 這類不展開）
+   if ((($path -split ';') | ForEach-Object { [Environment]::ExpandEnvironmentVariables($_) }) -notcontains $dir) {   # PATH 只加一次
+     $key.SetValue('Path', ((@($path -split ';') + $dir) | Where-Object { $_ }) -join ';', 'ExpandString')
+     # 通知已經開著的程式（檔案總管）PATH 改了：設一個環境變數再拿掉（只有這個會廣播）
+     [Environment]::SetEnvironmentVariable('XJ_PATH_CHANGED', '1', 'User'); [Environment]::SetEnvironmentVariable('XJ_PATH_CHANGED', $null, 'User')
    }
+   $key.Close()
    ```
 
    資料夾不帶版本號：更新的時候照樣做這一步，PATH 不用再改（每一版各加一個資料夾的話，舊版排在前面，打 `xj` 跑的會是舊版）。
    已經開著的視窗讀不到新的 PATH：開一個新的終端機視窗（Windows Terminal 開新分頁還是找不到的話，整個關掉再開），
    `xj --version` 印得出版本就好了。cmd、PowerShell 用的是 `xj.cmd`，Git Bash 用的是同一個資料夾裡的 `xj`。
-   這段會把你 PATH 裡 `%USERPROFILE%` 這類寫法換成展開後的路徑（用起來一樣）；要保留原本的寫法，改用開始功能表搜尋
+   這段照原本的寫法改 PATH：`%USERPROFILE%` 這類寫法和值的種類（`REG_EXPAND_SZ`）都不變。也可以用開始功能表搜尋
    「編輯您帳戶的環境變數」，在 Path 新增 `%LOCALAPPDATA%\Programs\xj`。
 4. 要沙盒的話，照上面「Windows」用系統管理員權限把 sandbox-runtime 裝到整台電腦、跑 `windows-install`。
 5. 跑 `xj doctor`。金鑰用 `xj setup` 存（存進 Windows 的認證管理員；存不進去的話存成只給你自己讀的金鑰檔），或設環境變數 `XING_JANUS_ANTHROPIC_API_KEY`。
@@ -207,10 +212,15 @@ xj 記沙盒權限用的 `%LOCALAPPDATA%\xing-janus`，從 PATH 拿掉程式的�
 $dir = "$env:LOCALAPPDATA\Programs\xj"
 Remove-Item -Recurse -Force $dir
 Remove-Item -Recurse -Force "$dir.old", "$dir.update", "$env:LOCALAPPDATA\Programs\xj-update.log", "$env:LOCALAPPDATA\xing-janus" -ErrorAction SilentlyContinue
-$path = [Environment]::GetEnvironmentVariable('Path', 'User')
-[Environment]::SetEnvironmentVariable('Path', (($path -split ';') | Where-Object { $_ -and $_ -ne $dir }) -join ';', 'User')
+$key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment', $true)
+$path = $key.GetValue('Path', '', 'DoNotExpandEnvironmentNames')   # 跟安裝的第 3 步一樣：照原本的寫法改
+$key.SetValue('Path', (($path -split ';') | Where-Object { $_ -and [Environment]::ExpandEnvironmentVariables($_) -ne $dir }) -join ';', 'ExpandString')
+$key.Close()
+[Environment]::SetEnvironmentVariable('XJ_PATH_CHANGED', '1', 'User'); [Environment]::SetEnvironmentVariable('XJ_PATH_CHANGED', $null, 'User')   # 通知 PATH 改了
 cmdkey /delete:xing-janus-anthropic     # 認證管理員裡的金鑰（openai 等、有名字的那幾把也是各刪一次）
 ```
+
+PATH 裡的 xj 那一項，寫成 `%LOCALAPPDATA%\Programs\xj` 的也會拿掉；其他項目照原本的寫法留著。
 
 裝過沙盒的話，再在系統管理員權限的 PowerShell 裡：
 

@@ -2,6 +2,78 @@
 
 版本號照 semver。
 
+## 0.1.4
+
+**需要**：跟 0.1.3 一樣 —— macOS、Linux 或 Windows，Node 24 以上（Windows 建議 24.20.0 以上）、`ripgrep`；Linux 另外要 bubblewrap、socat 和 sandbox-runtime 0.0.79，
+Windows 要 Git for Windows（見 `docs/install.md`）。
+
+**從 0.1.3 更新**：打 `xj update`（Homebrew 裝的用 `brew upgrade xj`）。設定檔、金鑰、對話紀錄都不用動。
+- `xj setup` 第一題的編號改了：3 是 Gemini、4 是本機或其他 OpenAI 相容的服務（0.1.3 的 3 是 Ollama）。
+- 用沒加密的 `http://` 接別台電腦上的服務、又要金鑰的：這一版起金鑰不送（會以明文送出）。改用 https；確定要送的話，在設定檔的 `providers.<名稱>`
+  加上 `"allowPlainHttpKey": true`（見 `docs/config.md` 的「接別的模型服務」）。
+- 你的 `~/.xing-janus/prices.json` 是舊版建的話沒有 Gemini 的價格（花費顯示「未知」）：`xj doctor` 會講怎麼換成新的。
+
+還在 0.1.1、0.1.2 的話，先看下面 0.1.3 那一段（換版是舊版的程式在做，有幾件要避開）。
+
+**下載之後先驗**（兩個檔案跟壓縮檔一起放）：
+
+```bash
+shasum -a 256 -c xj-0.1.4-darwin.tar.gz.sha256
+minisign -Vm xj-0.1.4-darwin.tar.gz -P <你留的那份公鑰>
+```
+
+Linux 是 `xj-0.1.4-linux-x64.tar.gz` 或 `xj-0.1.4-linux-arm64.tar.gz`（SHA-256 用 `sha256sum -c` 驗），Windows 是 `xj-0.1.4-windows.zip`
+（照 `docs/install.md`「Windows 的安裝」第 1、2 步驗，用你留的那份公鑰）。驗完看 minisign 印的 `Trusted comment:`，
+要是 `xing-janus v0.1.4 xj-0.1.4-<平台>…`，不是的話不要裝（舊版連同它的簽章換個檔名，前面兩行照樣驗得過）。
+第一次用的話，照 `docs/install.md` 裝好、跑 `xj setup`。
+
+新功能：
+
+- `xj mcp`：讓別的程式（Claude Desktop、IDE、你自己寫的通訊軟體橋接）透過 MCP 叫 xj 做事（[mcp-server.md](mcp-server.md)）。能做什麼照設定檔的 `mcpServer`：
+  預設唯讀、沙盒外的動作一律不行、只有啟動它的那個資料夾、花費每輪 $2／每天 $10（到了就停）；放寬的話要核准的用 MCP 的 elicitation 問人（問題先遮金鑰，只給「允許一次」「拒絕」）。
+  一律要沙盒、資料夾要在電腦前面信任過；交來的字裡的 `@路徑` 不附加檔案
+- Gemini 有原生的轉接層（以前走 Google 的 OpenAI 相容端點）：`xj setup` 選 3，或設環境變數 `XING_JANUS_GEMINI_API_KEY`；`AQ.` 開頭的新金鑰也能用，
+  對話紀錄裡會遮掉。思考的內容原樣帶回，連續好幾輪的工具呼叫不會壞。設定檔的 `providers.gemini` 寫了 `baseURL` 的照舊走相容端點。
+  免費額度的金鑰，Google 會拿送出去的內容改進產品（見 `docs/config.md` 的「Gemini」）
+- `xj setup` 第一題的第 4 項：本機或其他 OpenAI 相容的服務（Ollama、LM Studio、llama.cpp、vLLM、OpenRouter…）。先列出 Ollama 和這台找到的本機伺服器，
+  最後一項自己填網址（也可以直接貼），再問名字、要不要金鑰：只用本機模型的人在設定精靈就能設好（以前要先有 Anthropic、OpenAI 的金鑰才進得了 xj、才用得到 `/model`）。
+  按 Enter 是 Ollama；找到的其他伺服器要打編號才選得到（多人共用的電腦上，別人的程式可能佔住那些埠）
+- 價格表：限期的優惠價（`until`、`after`），照日期自己換成之後的價格；預設的價格表加了主要的 Gemini 模型
+- 每一輪的工具呼叫上限，預設從 50 調到 100（設定檔的 `limits.toolCallsPerTurn`）
+
+修正：
+
+- 安全：金鑰不以沒加密的 http 送到別台電腦。以前只有 `xj setup`、`/model` 這次要存的新金鑰不送，同一個名字原本就有的（鑰匙圈、金鑰檔、環境變數）
+  照樣以明文送到新的網址（例如重新設定時網址少打一個 s）。開 xj、在 xj 裡換過去、當場設金鑰、`/key` 換一把、`xj doctor` 都不送（設定見上面「從 0.1.3 更新」）
+- 安全：`xj setup`、`/model` 新增服務時，網址照設定檔的寫法檢查：`HTTP://`、`http:/`、`http:\\` 這類寫法以前會先把金鑰以明文送出去，最後才被設定檔擋下來；
+  網址裡帶帳號、密碼的不收
+- 安全：平台的名字不能有 `--`（`anthropic--work` 會蓋掉 Anthropic 叫 work 的那一把金鑰）、不能是 `prototype`、`con` 這類保留的名字；
+  `xj setup` 存金鑰之前先驗整份設定，寫設定檔時先寫到暫存檔、驗過才換上去（以前寫壞了之後每次開 xj 都講設定檔有錯）
+- 安全：Gemini 關掉 SDK 的自動接續（服務回了接續的 token 時，SDK 會帶著整段對話自己再送、每次都重新計費，預算擋不住；斷線也自己再試）：回了 token 的當成被截斷。
+  工具的參數跟另外兩家一樣先過檢查（`__proto__` 這類鍵拿掉）
+- 安全：OpenAI 相容的服務（OpenAI、Ollama、OpenRouter…）也不跟轉址：以前跨網域的轉址時，整段對話照樣送到轉址的地方（金鑰不會）。
+  Gemini、OpenAI 相容的服務回了轉址時，訊息跟 Anthropic 一樣講是轉址（以前說「連不到」）
+- 安全：`xj doctor` 的每一列、開場第一行，把服務回的字、資料夾名稱裡的換行收成空格（以前可以偽造出整列，例如假的「沙盒：擋得住」）；
+  開場第一行和「這個資料夾」那一列標出資料夾名稱裡的方向控制字元（以前原樣印：同一行後面的字會反過來，Windows Terminal 右邊那一欄會被推走）
+- 安全：`xj setup` 第 3 步連不到時的原因先遮掉金鑰（服務把收到的 Authorization 放進錯誤訊息的話，以前整把印在畫面上）；列模型最多等 15 秒（以前服務不回就一直停著）
+- 安全：`.localhost` 結尾的網址不算「在這台」（Node 照 DNS 解析）：`/model` 換過去之前照樣先問
+- Windows：沙盒偶爾起不來（「could not bind a loopback listener outside the WFP permit range」：沙盒程式庫找臨時埠只試 5 次）→ xj 自己重開，最多 3 次
+- Windows：Microsoft Store 版的 PowerShell 7 找得到了（沒開沙盒時用它；沙盒開著時照舊用 Program Files 的 7 或內建的 5.1）；跳過 PowerShell 7 時的說明改正。
+  它開的程式不在 xj 的 job object 裡（Store 的程式准許子程序脫離 Windows 給它的 job）：Ctrl-C、逾時時照父程序收，指令結束之後留下的程式收不到（cerberus.md）。
+  執行別名只認指到 `%ProgramFiles%\WindowsApps` 的（安全：沙盒裡的指令在工作目錄建一個別名的話，之後沒有沙盒時 xj 會選它）
+- 價格表：限期的優惠價，一般的有長上下文、`after` 沒寫的那一筆不用（以前過了 `until` 長上下文的加價整個不見，花費算少）
+- `xj setup`：建議不出模型時（連不上、清單是空的）不給「ollama:」這種預設值（設定檔不收，按 Enter 就整個失敗）；打的不是「廠商:模型」就講清楚再問，三次都不行就不存。
+  連不到時的訊息不再多一個句號（「Ollama 有開嗎？。」）
+- 英文的 `xj doctor`：一列接兩句話時，後一句的開頭改小寫（以前印成「v0.1.3; The last…」）
+- 一般模式把視窗縮窄時，舊的狀態列被終端機折成兩行，上半截一直留在畫面上（之後印的字也蓋不掉）、放寬時又被接回來推到中間：清掉了。
+  只在認得出會這樣重折的終端機上清（Windows Terminal、tmux、Terminal.app、iTerm2、VS Code、GNOME Terminal 這類用 VTE 的、kitty、WezTerm、Ghostty、Alacritty、foot）；
+  舊的主控台（conhost）、xterm 這類不會重折的，和 SSH 連進來看不出是哪一種的照舊（在不會重折的終端機上清，會刪到對話的最後幾行）
+- `/model` 換了之後連平台一起講（「改用 Claude Sonnet 5.5（anthropic，系列 sonnet）」），`/resume` 的清單寫 `平台:模型`、接續時也講平台：不同平台有同名的模型時看得出是哪一個
+- 設定檔的 `budget.unknownRequestsPerTurn`：一輪裡幾個查不到價格的請求就停下來問（預設照舊 10；填 0 是不問，例如用本機的服務時）。停下來問的那一句也講怎麼關
+- 在 xj 裡打字時的說明折行時，句尾的標點（「）。」這類）不折到下一列的開頭、開頭的括號不留在上一列的結尾
+- 使用者文件：README、快速開始、`config.md`（Gemini、限期的優惠價、`xj setup` 的第 4 項、`allowPlainHttpKey`、平台的名字）、使用說明、隱私、疑難排解；
+  `install.md` 註明 arm64 的 Windows 還沒實際測過，Windows 的安裝、移除改 PATH 的那幾行照原本的寫法改（`%USERPROFILE%` 這類寫法和值的種類 `REG_EXPAND_SZ` 不變；以前的寫法會換成 `REG_SZ`）
+
 ## 0.1.3
 
 **需要**：跟 0.1.2 一樣 —— macOS、Linux 或 Windows，Node 24 以上（Windows 建議 24.20.0 以上）、`ripgrep`；Linux 另外要 bubblewrap、socat 和 sandbox-runtime 0.0.79，

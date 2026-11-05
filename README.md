@@ -2,8 +2,8 @@
 
 [English](README.en.md)
 
-在終端機裡跟你對話、幫你寫程式的 coding agent。用你自己的 API key，支援 Anthropic、OpenAI 和其他 OpenAI 相容的服務：
-本機的 Ollama、LM Studio、llama.cpp、vLLM（不用 key，可以離線），雲端的 OpenRouter、Gemini 這類。
+在終端機裡跟你對話、幫你寫程式的 coding agent。用你自己的 API key，支援 Anthropic、OpenAI、Gemini 和其他 OpenAI 相容的服務：
+本機的 Ollama、LM Studio、llama.cpp、vLLM（不用 key，可以離線），雲端的 OpenRouter 這類。
 
 預設在改檔、跑白名單以外的指令、連新的網域之前先問你；`.env`、私鑰這類機密檔，xj 的工具和沙盒裡的指令都讀不到。指令在作業系統的沙盒裡跑（Windows 的沙盒要另外裝），擋得住什麼、擋不住什麼見[安全說明](docs/cerberus.md)。
 
@@ -46,7 +46,8 @@ cd 你的專案
 xj
 ```
 
-第一次直接打 `xj` 也可以：它會先問介面語言、顯示使用提醒，再帶你跑 `xj setup`。金鑰已經設好（環境變數、鑰匙圈、Windows 的認證管理員）就直接用，沒有的話請你貼上。
+第一次直接打 `xj` 也可以：它會先問介面語言、顯示使用提醒，再帶你跑 `xj setup`。第一題選 4 就能接本機或其他 OpenAI 相容的服務（Ollama、LM Studio、llama.cpp、vLLM、OpenRouter…：列出這台找到的，也能自己填網址），本機的不用金鑰；
+要金鑰的，已經設好（環境變數、鑰匙圈、Windows 的認證管理員）就直接用，沒有的話請你貼上。
 其他設定都有預設值，要改的時候看 [config.md](docs/config.md)。
 
 - **換平台、換模型**：在 xj 裡打 `/model`。這台的 Ollama、LM Studio 會自己找出來，也能新增別的 OpenAI 相容服務；缺金鑰當場貼上，換了就記住。
@@ -58,6 +59,7 @@ xj
 - [快速開始](docs/quickstart.md)：從拿到 API key 到第一次改檔
 - [使用說明](docs/usage.md)：模式、權限詢問、斜線指令、狀態列、花費
 - [設定檔](docs/config.md)、[疑難排解](docs/troubleshooting.md)（有問題先跑 `xj doctor`）
+- [讓別的程式叫 xj（MCP）](docs/mcp-server.md)：Claude Desktop、IDE、你自己寫的通訊軟體橋接；預設唯讀
 - [資料在哪、怎麼刪](docs/privacy.md)、[安全說明](docs/cerberus.md)、[回報安全問題](docs/SECURITY.md)
 - [更新說明](docs/CHANGELOG.md)、[使用條款](LICENSE)（中文翻譯見 [docs/terms.md](docs/terms.md)）、第三方授權（壓縮檔裡的 `THIRD_PARTY_LICENSES`）
 

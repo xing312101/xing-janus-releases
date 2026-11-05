@@ -17,8 +17,8 @@ Choosing "always allow" at a question writes to `permissions.allow`, `sandbox.al
 | `screen` | `fullscreen` | The screen: `fullscreen` is full-screen mode (in wide windows the to-do list and current status are on the right; PageUp/PageDown and the wheel scroll); `classic` is classic mode (the terminal scrolls, searches and copies). When full-screen mode cannot start (output is not a terminal, the old Windows console), classic mode is used. `/tui` writes it when you switch |
 | `enterToApprove` | `true` | Enter means yes at questions (on by default, as in Claude Code; set it to `false` to always press y) ("allow once" for domain questions). Dangerous commands, content you have not seen in full and the always-allow confirmation still need `y`; an Enter within 0.5 seconds of a question appearing does not count (you may have been typing). The trust-this-folder question cannot be answered with Enter |
 | `statusBar.fields` | `model`, `key`, `effort`, `mode`, `sandbox`, `context`, `todo`, `day-cost`, `month-cost`, `progress` | Which items the status bar shows, in order of importance: when the window is too narrow, items are dropped from the end. There is also `session-cost` (the cost of this session). `todo` is the to-do list (it takes no space when there is no list or everything is done; added 2026-10-22, so if you wrote this field yourself before that, add `todo` to see it). `key` is which key is in use when a provider has several (it takes no space with only one key; added 2026-10-29, so add it yourself if you wrote this field before) |
-| `budget` | $5 per turn, $30 per day, $100 per month, billing cycle starts on the 1st | `perTurnUsd`, `perDayUsd`, `perMonthUsd` (US dollars), `cycleStartDay` (the day of the month the billing cycle starts, 1–28). A notice at 80%, a stop-and-ask at 100%. The limits are compared against the **estimated** cost (local price table × usage), not the provider's bill; 0 turns that one off. `xj setup` does not ask about this |
-| `limits` | 50 tool calls per turn, at most 64000 output tokens per request | `toolCallsPerTurn`: the most tool calls per turn; at the limit it stops and asks you. `maxOutputTokens` (at least 1024): the output limit for each request, never above the model's own limit; reaching it does not stop and ask (a cut-off reply gets a notice, and cut-off tool calls are not run) |
+| `budget` | $5 per turn, $30 per day, $100 per month, billing cycle starts on the 1st | `perTurnUsd`, `perDayUsd`, `perMonthUsd` (US dollars), `cycleStartDay` (the day of the month the billing cycle starts, 1–28), `unknownRequestsPerTurn` (after how many requests with no known price in one turn xj stops and asks, 10 by default: their cost cannot be worked out, so the dollar limits cannot catch them; set 0 if you use a local service and do not want to be asked, or put 0 for that model in the price table). A notice at 80%, a stop-and-ask at 100%. The limits are compared against the **estimated** cost (local price table × usage), not the provider's bill; 0 turns that one off. `xj setup` does not ask about this |
+| `limits` | 100 tool calls per turn, at most 64000 output tokens per request | `toolCallsPerTurn`: the most tool calls per turn; at the limit it stops and asks you. `maxOutputTokens` (at least 1024): the output limit for each request, never above the model's own limit; reaching it does not stop and ask (a cut-off reply gets a notice, and cut-off tool calls are not run) |
 | `permissions` | Every field empty (the built-in whitelist, danger list and secret files still apply) | **The built-in lists always apply** (see "The built-in whitelist, danger list and secret files" below); write only what you want to add or remove here: `allow`/`allowRemove` (whitelist), `danger`/`dangerRemove` (danger list; removals by name), `secretFiles`/`secretFilesRemove` (secret files). `extraReadable`: folders outside the working folder it may also read (your home folder itself, credential folders such as `~/.ssh` and `~/.aws`, and the folders containing them are not used; xj says so at startup). If you do not want anything looser or stricter, leave it out |
 | `sandbox.toolchainReadable` | `~/.gitconfig`, `~/.config/git`, `~/.cargo`, `~/.rustup`, `~/.pyenv`, `~/.nvm`, `~/.volta`, `~/development/flutter`, `~/fvm`, `~/.pub-cache`, `~/.gradle`, `~/.android`, `~/Library/Android/sdk` (missing ones are skipped) | Toolchains commands in the sandbox can read (outside the working folder; the rest of your home folder is not readable). `~/.gitconfig` and `~/.config/git` are only opened when `sandbox.gitconfig` is `"full"` (with the default `"filtered"`, the sandbox gets a filtered copy). Windows (2026-10-21): opening a folder means changing the permissions of every file in it, so with the default value, folders are opened by project type (npm's global folder only with a `package.json`, the Android SDK and `~/.gradle` only with Gradle files such as `build.gradle`…; when the project type cannot be told yet (a brand-new empty folder), the Node and Python ones are opened anyway; Flutter projects (`pubspec.yaml`) do not open the Flutter SDK or the Pub cache, and their `android/` folder does not count either — flutter and dart always run outside the sandbox, so opening them would only slow down the start), and large toolchains only partly; if you write this field or `writable` yourself, it is used as written and xj adds nothing |
 | `sandbox.writable` | `~/.pub-cache`, `~/.gradle` | Where commands in the sandbox can write (the working folder and temp folders are always writable; no need to list them) |
@@ -29,14 +29,15 @@ Choosing "always allow" at a question writes to `permissions.allow`, `sandbox.al
 | `sandbox.allowUnsandboxedCommands` | `true` | Whether tools that cannot run in the sandbox (such as flutter) may ask to run that one command outside it (asked every time), see "Tools that cannot run in the sandbox" below |
 | `sandbox.autoFixWritable` | `false` | Windows: when the sandbox start finds places on your PATH the sandbox account can write to, block them as administrator without asking (UAC still asks). `false` means xj asks you once, and "always allow" writes `true`; remove it with `/permissions`; see "Skip-all-permissions mode" in usage.md |
 | `sandbox.writablePrograms` | `ask` | Windows: what to do when programs that run outside the sandbox (xj's git, Git Bash, `excludedCommands`, tools such as flutter, MCP servers, the rg used by search) are in folders the sandbox can write to — `"ask"` asks once when the sandbox starts, for that conversation; `"deny"` does not ask and does not run them outside the sandbox (search runs inside the sandbox instead); `"allow"` does not ask and runs them (still marked red every time). "Always allow" writes `"allow"`; remove it with `/permissions`; see cerberus.md |
-| `windows` | `{}` | Windows only (2026-10-20): `gitBash` is the full path of Git Bash's `bash.exe`, `powershell` the full path of `pwsh.exe` or `powershell.exe`. Without them xj looks for them (Git Bash via git.exe on PATH and the default install locations; PowerShell 7 first, then the built-in one). They cannot be files in the project, nor `C:\Windows\System32\bash.exe` (that is WSL) |
+| `windows` | `{}` | Windows only (2026-10-20): `gitBash` is the full path of Git Bash's `bash.exe`, `powershell` the full path of `pwsh.exe` or `powershell.exe`. Without them xj looks for them (Git Bash via git.exe on PATH and the default install locations; PowerShell 7 first, then the built-in one; the Microsoft Store 7 counts too, but not while the sandbox is on). They cannot be files in the project, nor `C:\Windows\System32\bash.exe` (that is WSL) |
 | `env.passthrough` | `JAVA_HOME`, `ANDROID_HOME` | Commands run in a clean environment: only `PATH`, `HOME`, `LANG`, `TERM` and `TMPDIR` are kept (on Windows also the few the system needs, such as `SystemRoot`), plus the variables listed here; keys, tokens and the like are not passed on |
 | `keyFiles` | Empty (keys are looked up in environment variables, then the keychain or Credential Manager) | Without a keychain: provider → key file. Paths must be absolute or start with `~` (on Windows with a drive letter, for example `C:\keys\anthropic.txt`): a relative path would be read from the working folder, so the config rejects it. These paths automatically count as secret files. For several keys of one provider, write the key as `provider:name` (for example `anthropic:work`) |
 | `keys` | Empty (one key per provider) | Several keys for one provider: which one each folder uses, what to do when one is rejected, a limit for one key. See "Several keys for one provider" below |
-| `providers` | Built in: `openai` (`https://api.openai.com/v1`), `ollama` (`http://localhost:11434/v1`) | Change `baseURL`, turn one off with `enabled: false`, or add your own service (`kind: "chat-completions"`, `baseURL`, `keyName`). OpenAI is not connected without a key; your own services are connected even without one (local services often need none); Ollama needs no key |
+| `providers` | Built in: `openai` (`https://api.openai.com/v1`), `ollama` (`http://localhost:11434/v1`), `gemini` (Google's Gemini API, see "Gemini" below) | Change `baseURL`, turn one off with `enabled: false`, or add your own service (`kind: "chat-completions"`, `baseURL`, `keyName`, `allowPlainHttpKey`; see "Connecting other model services" below). OpenAI and Gemini are not connected without a key; your own services are connected even without one (local services often need none); Ollama needs no key. Giving `gemini` a `baseURL` makes it use that address's OpenAI-compatible endpoint instead |
 | `capabilities` | Empty (what each provider's model list reports; for models it does not know, conservative defaults: 32k context, 8k output, with `?` in the status bar) | Override a model's capabilities (context, maximum output, toolset…); keys are "provider:model": `contextTokens`, `maxOutputTokens`, `compactAtTokens` (the context size in tokens at which it summarizes automatically; by default 150,000, but no more than 80% of the context), `imageInput` (whether it accepts images), `tools` (`"none"` sends no tools; `"reliable"` and `"unreliable"` currently make no difference; Anthropic models ignore this field), `parallelToolCalls` (currently has no effect), `toolset` (`"full"`, or `"reduced"`: only read, search and edit). `todoTool`: whether this model gets the to-do list tool (`todo_write`); `webFetch`: whether it gets the web-fetch tool (`web_fetch`). Every model gets them by default; write `false` to keep a model from using one. `subagents`: whether it gets the subagent tool (`agent`); also on by default, write `false` to turn it off for a model |
 | `subagents` | 4 at once, 30 tool calls, 10 minutes | Subagents (see "Subagents" in usage.md): `maxConcurrent` how many run at once (only read-only explore subagents run in parallel), `maxToolCalls` and `timeoutMinutes` the limits for each (at the limit it is told to report), `model` the default model (without it, the main conversation's) |
 | `mcp.servers` | Empty (no MCP servers) | MCP servers: `command`, `args`, `env`, `description`, `sandbox`, `autoApprove`, `readOnly`, `timeoutSec` (how many seconds one call may take, 600 by default). Values in `env` whose names look like keys (ending in `_KEY`, `_TOKEN`, `_SECRET`, `_PASSWORD` and so on) are treated as keys: masked wherever they appear in the server's output, error messages and session logs. The Windows sandbox cannot run MCP servers yet (stdin cannot be connected): with the sandbox on, set `sandbox: false` (it then runs outside the sandbox with your permissions) |
+| `mcpServer` | Read-only, nothing outside the sandbox, only the folder `xj mcp` was started in, spending $2 a turn / $10 a day | What other programs may do when they call xj through MCP (`xj mcp`): `mode`, `outsideSandbox`, `projects`, `anyProject`, `budget`. Read the risks in [mcp-server.md](mcp-server.md) before relaxing anything |
 | `anthropic` | `fallback: default`, `prefixMismatch: drop_block` | Anthropic-specific settings. `fallback`: `"default"` lets Anthropic's server retry with another model when the request is blocked by the safety classifier, and that model answers instead (the status bar shows "→ the model that answered", and that model's price is used); `"off"` means no switch and no retry. `prefixMismatch`: when the earlier conversation changed (for example after summarizing) and no longer matches the model's reasoning, `"drop_block"` drops that reasoning and sends the request anyway, `"error"` fails instead (for testing) |
 | `evals.budgetUsd` | `2` | For development: the most each eval run may spend (US dollars). Evals (`node evals/run.ts`) only exist in the source repo, not in the released version |
 | `sessions.retentionDays` | `30` | How many days session logs are kept: older ones are removed at every start (`xj sessions prune` does it by hand too) |
@@ -162,21 +163,41 @@ Named keys are kept the same way, with the name added after the usual one:
 - Before choosing `"auto"`, think about two things: rotating several keys automatically to get around rate limits **may break the provider's terms** (check them first), and after a switch, costs go on that key's bill. `xj doctor` reminds you too.
 - Subagents use the same key as the main conversation. `xj -p` and evals (for development, `node evals/run.ts --key work`) take `--key` as well. `xj doctor` shows one row per key (found or not, where, whether it connects).
 
+## Gemini
+
+Built in, connecting to Google's Gemini API (a native adapter: thought signatures are sent back unchanged, so long runs of tool calls keep working).
+
+- **Key**: create a key restricted to the Gemini API in Google AI Studio (or the Google Cloud console). Store it with `xj setup` (choose 3, Gemini, in the first question), or set the
+  environment variable `XING_JANUS_GEMINI_API_KEY`, or the keychain (Credential Manager) item `xing-janus-gemini`. Do not use `GEMINI_API_KEY` or
+  `GOOGLE_API_KEY`: other tools read them too (xj does not). New keys starting with `AQ.` and older ones starting with `AIza` both work.
+- **Models**: `gemini:gemini-flash-latest` (Google's alias that always points at the newest Flash), `gemini:gemini-3.5-flash-lite`, `gemini:gemini-3.1-pro-preview`…;
+  `/model` lists the ones your key can use (speech, image and music models, which are not for conversations, are left out).
+- **Reasoning effort**: from Gemini 3 on, `low` and `high` (`/effort`, `high` by default); 2.5 uses the server's default. While the model thinks, Google sometimes sends a summary of its thoughts; xj shows its beginning as progress.
+- **What is sent**: if the Cloud project that owns the key has billing turned on (paid), Google does not use what you send to improve its products;
+  **with free-tier keys it does**, and people may review it (the Gemini API additional terms). Use a paid key for code you do not want used to improve products or reviewed by people; code that must not leave your company should not go to any cloud model (use a local one).
+- **Prices**: the default price table has the main Gemini models (copied from Google's pricing page). Prices discounted for a limited time say until which day
+  they apply (`until`) and the regular price after that (`after`); xj switches by date (see "Time-limited prices" below).
+  If your `~/.xing-janus/prices.json` was created by an older xj it has no Gemini prices and costs show as "unknown": `xj doctor` says how to get the new table.
+- **If you connected the compatible endpoint before** (`providers.gemini` with a `baseURL`, as this page used to say): that keeps using the compatible endpoint.
+  To use the native one, remove `providers.gemini`. People on Google's forum report that keys AI Studio issues now, starting with `AQ.`,
+  fail on the compatible endpoint (`Multiple authentication credentials received`).
+
 ## Connecting other model services
 
 Any OpenAI-compatible API works by adding a `providers` entry, with no code changes. Put the key in the environment variable
 `XING_JANUS_<NAME IN CAPITALS>_API_KEY`, the keychain or Credential Manager (the item is named `xing-janus-<name>`), or a file named in `keyFiles`.
-`xj setup` only asks about Anthropic, OpenAI and Ollama: set your own service's key right inside xj (paste it when you pick or add the service in `/model`),
+`xj setup` asks about Anthropic, OpenAI, Gemini, or a local or other OpenAI-compatible service (choice 4: it lists Ollama and the local servers found on this computer, the last item lets you enter an address; then a name and whether it needs a key); for services you add later, set the key right inside xj (paste it when you pick or add the service in `/model`),
 or store it yourself (macOS: `security add-generic-password -s xing-janus-<name> -a "$USER" -w`; Windows: `cmdkey /generic:xing-janus-<name> /user:xj /pass`).
 You can also add one inside xj: the last item of the `/model` menu, "Add an OpenAI-compatible service", or a server "found on this computer"
 ("Switching platforms and models" in usage.md). It is written to `providers` here (only `kind` and `baseURL`) once its model list answers;
 a key set there is stored the same way as with `xj setup`.
+A name may use lowercase letters, digits and `-` (starting with a lowercase letter, at most 32 characters), but not `--` (it separates named keys, so the name would share another provider's key);
+reserved names such as `prototype`, `constructor`, `con` and `nul` are refused (they cannot be used in the config file or as Windows file names).
 
 ```json
 {
   "providers": {
     "openrouter": { "kind": "chat-completions", "baseURL": "https://openrouter.ai/api/v1" },
-    "gemini": { "kind": "chat-completions", "baseURL": "https://generativelanguage.googleapis.com/v1beta/openai" },
     "local": { "kind": "chat-completions", "baseURL": "http://localhost:8080/v1" }
   },
   "capabilities": {
@@ -191,13 +212,34 @@ Three things to watch:
 
 1. **Fill in the capabilities yourself.** When a model's capabilities cannot be found, conservative defaults are used (**32k context**, 8k output). So a model with a 1M context
    is treated as 32k unless you write `capabilities`. Model IDs with slashes are fine.
-2. **Costs show as "unknown".** Costs come from `~/.xing-janus/prices.json`, so add an entry for your own service
+2. **Costs show as "unknown".** Costs come from `~/.xing-janus/prices.json` (see the example under "Time-limited prices" below), so add an entry for your own service
    (for local models, 0 everywhere; otherwise once 10 requests in one turn have no known price, it stops and asks whether to continue).
 3. **Scale local models down**: `"toolset": "reduced"` (only read, search and edit).
    Ollama gets this automatically (small models often cannot call tools correctly), but "your own service" (LM Studio, llama.cpp, vLLM…) is treated as a cloud API, so write it yourself.
 
 Local services (llama.cpp's `llama-server`, vLLM, LM Studio) just need `http://localhost:<port>/v1`,
 without a key; `http://` only escapes the warning for localhost.
+Unencrypted `http://` to another machine (a vLLM on another computer on your network, say): the key would go in plain text, so xj does not send it
+(at startup, when switching to it inside xj, when setting a key there, and in `xj doctor`); services that need no key work as usual.
+To send it anyway, add `"allowPlainHttpKey": true` to that provider (anyone on the same network can see the key).
 Without `--alias`, llama.cpp's `llama-server` names the model after the file given to `-m` (for example `C:\models\qwen2.5-7b-instruct-q4_k_m.gguf`):
 that still works and is remembered, but for a shorter name start it with `--alias qwen` and pick it with `/model llamacpp:qwen`
 (`llamacpp` is the name `/model` gives it when it finds the server; if you added it yourself, use your name).
+
+## Time-limited prices
+
+A model's entry in the price table (`~/.xing-janus/prices.json`) can say until which day a discount applies: the entry's own prices (`inputPerMTok` and so on)
+apply through the `until` day, and the prices in `after` from the next day. Days are counted in UTC (official pages usually give US time: UTC switches to the
+later price a few hours early, which overestimates rather than underestimates). Write both together; if either has a mistake the entry is not used (as if it had
+no price), and xj says so when it starts and in `xj doctor`. For example, this entry from the default price table (under `providers.gemini`):
+
+```json
+"gemini-4-argon": {
+  "inputPerMTok": 2, "outputPerMTok": 10, "cacheReadPerMTok": 0.1,
+  "until": "2026-11-30",
+  "after": { "inputPerMTok": 4, "outputPerMTok": 20, "cacheReadPerMTok": 0.2 },
+  "source": "https://aistudio.google.com/docs/pricing", "asOf": "2026-11-04"
+}
+```
+
+`after` can have its own `longContext` (the prices above a prompt-length threshold); without it, there is no separate long-context price after that day.

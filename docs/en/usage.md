@@ -110,13 +110,13 @@ Input: Enter sends; type `\` at the end of a line or press Alt-Enter for a new l
 
 ## Switching platforms and models (/model)
 
-Type `/model` (without an argument) to pick a platform first, then one of its models. There are three kinds of platform: Anthropic, OpenAI, and
-OpenAI-compatible services (local ones such as Ollama, LM Studio, llama.cpp and vLLM; hosted ones such as OpenRouter or Gemini's compatible endpoint).
+Type `/model` (without an argument) to pick a platform first, then one of its models. There are four kinds of platform: Anthropic, OpenAI, Gemini, and
+OpenAI-compatible services (local ones such as Ollama, LM Studio, llama.cpp and vLLM; hosted ones such as OpenRouter).
 The menu shows:
 
 - Whether it is on this computer (`localhost`, `127.0.0.1`, `::1`) or which machine it connects to (the host of its address; an Ollama on another
   computer in your network counts as another machine)
-- Where its key is kept, or that it has none yet (Anthropic and OpenAI need a key; OpenAI-compatible services may not)
+- Where its key is kept, or that it has none yet (Anthropic, OpenAI and Gemini need a key; OpenAI-compatible services may not)
 - Servers found on this computer: opening the menu asks the usual ports on this computer only (Ollama 11434, LM Studio 1234, llama.cpp 8080,
   vLLM 8000; it waits less than a second), and lists the ones that answer with a model list; one is added to `providers` in the config only if you pick it
 - The last item, "Add an OpenAI-compatible service": a name, an address and a key (optional); it is added to the config only once its model list answers
@@ -124,6 +124,7 @@ The menu shows:
 A platform with no key yet (or a service that refuses requests without one, such as OpenRouter): pick it and paste the key right there.
 Only `•` is shown, and the key never enters the input history or the session log. It is used to list the models once and saved only if that works,
 in the same place as `xj setup` (the keychain or Credential Manager, or a key file only you can read if that fails).
+With an unencrypted `http://` address on another machine, the key would go in plain text, so xj does not send it or set one here (see "Connecting other model services" in config.md).
 This does not work when the input is not a terminal (a pipe): use `xj setup`. Nor when that provider is set to use a named key (`keys`):
 put that key where "Several keys for one provider" says.
 
@@ -199,6 +200,11 @@ Before the first use, run xj once in a terminal and accept the notice: until the
 With several keys for one provider, `xj -p --key work "…"` uses the work key (without it, the `keys` setting picks); when that key is rejected and `keys.<provider>.onReject` is `"ask"`, it never switches (nobody can answer).
 
 What comes in through a pipe is data, not your question: `@path` inside it does not attach files. To attach one, put it in the `-p` question (`git diff | xj -p "check this change against @docs/style.md"`).
+
+## Letting other programs call xj (MCP)
+
+`xj mcp` lets programs such as Claude Desktop, IDEs or a chat-app bridge you write call xj through MCP. It is read-only by default and only uses the folder it was started in;
+you decide what it may do and which projects it may use with `mcpServer` in the config file. How to connect, the risks of relaxing it, and the interface for plugins: [mcp-server.md](mcp-server.md).
 
 ## The status bar
 
