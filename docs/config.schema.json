@@ -21,9 +21,17 @@
       "additionalProperties": { "type": "string", "enum": ["low", "medium", "high", "xhigh", "max"] }
     },
     "defaultMode": {
-      "description": "預設模式：normal（一般）、auto-edit（自動改檔）、full-auto（全自動：改檔和沙盒裡的指令都不問，要信任的資料夾、沙盒開著）、plan（計劃）、read-only（唯讀）",
+      "description": "預設模式：normal（一般）、auto-edit（自動改檔）、full-auto（全自動：改檔和沙盒裡的指令都不問，要信任的資料夾；沒有沙盒時指令照樣問）、plan（計劃）、read-only（唯讀）、bypass（全部不問：要 allowBypass，開 xj 時照樣打字確認；xj -p 不收）",
       "type": "string",
-      "enum": ["normal", "auto-edit", "full-auto", "plan", "read-only"]
+      "enum": ["normal", "auto-edit", "full-auto", "plan", "read-only", "bypass"]
+    },
+    "allowFullAuto": {
+      "description": "在 xj 裡（Shift-Tab、/mode）切得到全自動（預設 false）：等於每次都加了 --auto，但不直接進去",
+      "type": "boolean"
+    },
+    "allowBypass": {
+      "description": "在 xj 裡切得到全部不問（預設 false）：每次開 xj 第一次進去要打字確認；用 root、系統管理員權限跑照樣不行",
+      "type": "boolean"
     },
     "language": {
       "description": "回覆的語言",
@@ -55,7 +63,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["model", "key", "effort", "mode", "sandbox", "context", "day-cost", "session-cost", "month-cost", "todo", "progress"]
+            "enum": ["model", "key", "effort", "mode", "sandbox", "folders", "jobs", "context", "turn-cost", "day-cost", "session-cost", "month-cost", "todo", "progress"]
           }
         }
       }
@@ -87,6 +95,16 @@
       "properties": {
         "toolCallsPerTurn": { "description": "每輪最多幾次工具呼叫，碰到就停下來問你", "type": "integer", "minimum": 1 },
         "maxOutputTokens": { "description": "每次請求的輸出上限，不超過模型的上限", "type": "integer", "minimum": 1024 }
+      }
+    },
+    "commands": {
+      "description": "指令（bash、PowerShell）的時間上限。模型自己改不了（可以提議，你答應才寫）",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "timeoutSec": { "description": "前景的指令沒寫 timeout 時，跑多久就收掉（秒；預設 120）", "type": "integer", "minimum": 1 },
+        "maxTimeoutSec": { "description": "前景的指令最長跑多久（秒；預設 600）：模型指定的 timeout 不能超過它。要更久的放到背景跑", "type": "integer", "minimum": 1 },
+        "backgroundMaxMinutes": { "description": "放到背景的指令最長跑多久（分；預設 60；0 是不限，例如開發伺服器）", "type": "integer", "minimum": 0 }
       }
     },
     "subagents": {
@@ -138,6 +156,26 @@
           "description": "工作目錄以外、也讓它讀的資料夾",
           "type": "array",
           "items": { "type": "string", "minLength": 1 }
+        },
+        "addDirs": {
+          "description": "開 xj 時一起加的資料夾：鍵是開 xj 的資料夾（它和底下的子資料夾；絕對路徑或 ~ 開頭），值是要加的（跟 /add-dir 一樣：write 是也能改，要信任過）",
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path"],
+              "properties": {
+                "path": { "description": "絕對路徑或 ~ 開頭", "type": "string", "minLength": 1 },
+                "write": { "description": "也能改（預設 false：只能讀）", "type": "boolean" }
+              }
+            }
+          }
+        },
+        "bypassAsksCriticalDelete": {
+          "description": "全部不問模式時，刪掉重要的地方（根目錄、根目錄下第一層、家目錄、工作目錄和它的上層、加進來的資料夾）照樣問（預設 true）；false 就不問。只有全部不問看它：其他模式本來就問",
+          "type": "boolean"
         }
       }
     },
@@ -145,6 +183,10 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "enabled": {
+          "description": "開 xj 時開不開沙盒（預設 true）。指令列的 --sandbox、--no-sandbox 蓋過它；全部不問模式不動它。false 的話指令以你的權限跑、白名單不生效（每個指令都問，全部不問除外）。xj mcp 一律開",
+          "type": "boolean"
+        },
         "toolchainReadable": {
           "description": "沙盒裡的指令可以讀的工具鏈位置，例如 ~/.cargo、Flutter SDK",
           "type": "array",

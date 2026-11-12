@@ -56,7 +56,7 @@ npm install -g --ignore-scripts @anthropic-ai/sandbox-runtime@0.0.79
 - A copy installed where the sandbox can write (the project folder, a temp folder) is never used: commands in the sandbox could replace it.
 - `xj doctor` shows which copy it uses. If none is found or the version is wrong, the sandbox row gives the exact command to run;
   when an xj update needs a different version, reinstall with that line too.
-- Without it the sandbox cannot start, and xj refuses to run any command. To run commands without the sandbox, start with `--no-sandbox` (every command asks you first).
+- Without it the sandbox cannot start, and xj refuses to run any command. To run commands without the sandbox, start with `--no-sandbox` or write `"sandbox": { "enabled": false }` in the config (every command asks you first).
 
 ## Install
 
@@ -68,7 +68,11 @@ brew trust --formula xing312101/xing-janus/xj
 brew install xj
 ```
 
-Homebrew does not load formulae from third-party taps by default; `brew trust` trusts only the xj formula (not the whole tap). Node and ripgrep are installed with it. xj itself always runs on the node that brew installed (whatever version nvm switches to does not matter), and commands in your projects still use the node on your PATH.
+Homebrew does not load formulae from third-party taps by default; `brew trust` trusts only the xj formula (not the whole tap). Node and ripgrep are installed with it.
+Homebrew's node brings twenty-odd dependencies of its own (openssl, icu4c, sqlite and the like; all prebuilt, nothing is compiled). If you already had some of them in an older version, `brew install xj` upgrades them first
+and then upgrades the other packages that use them, so a dozen or more packages can be upgraded at once: that is how Homebrew works for any formula that needs node. To avoid upgrading your other packages along with it,
+use `HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 brew install xj` (only what xj needs is upgraded; Homebrew warns that other packages may then end up with broken links),
+or follow the manual install below with your own Node. xj itself always runs on the node that brew installed (whatever version nvm switches to does not matter), and commands in your projects still use the node on your PATH.
 The formula is updated by the tap's own workflow from the latest version on this releases page: it verifies the signature with the public key first (brew itself only checks SHA-256),
 and brew checks the downloaded file against the formula's SHA-256. To verify it yourself as well, follow step 2 of the manual install below. Then run `xj doctor`.
 

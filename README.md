@@ -52,12 +52,39 @@ xj
 
 - **換平台、換模型**：在 xj 裡打 `/model`。這台的 Ollama、LM Studio 會自己找出來，也能新增別的 OpenAI 相容服務；缺金鑰當場貼上，換了就記住。
 - **換介面語言**：`/language ui en`、`/language ui zh-TW`。
+- **改設定**：在 xj 裡打 `/config`（常用的那幾項，一項一項講改了會怎樣）；或直接問 xj「我要用 docker，該怎麼設？」——它照你現在的設定回答，也可以提議改，你答應了才寫進設定檔（見[使用說明](docs/usage.md)的「改設定」）。
+- **改別的資料夾**：`/add-dir ../api`，問你只能讀還是也能改（能改的要信任過，跟工作目錄同一套規矩）；每次在這個專案開 xj 都要加的，寫在設定檔的 `permissions.addDirs`。
+- **看權限**：`/permissions` 先講現在的模式、沙盒、資料夾，再列出你永久允許的（拿得掉）、設定檔改了的、內建的規則。
+- **預算**：預設每輪 $5、每天 $30、每月 $100，到了先停下來問你；`/budget` 看花了多少、改上限（例如 `/budget day 50`）。
+- **很久的指令**：指令預設跑 2 分鐘就收掉（模型最多指定 10 分鐘，`/config` 調得了）；整套測試、開發伺服器叫它放到背景跑，`/jobs` 看輸出、停掉。
 - **更新**：手動裝的打 `xj update`，驗過 SHA-256 和簽章才換上；Homebrew 裝的用 `brew upgrade xj`（簽章由 tap 更新 formula 之前驗）。從 v0.1.1、v0.1.2 更新的話，先看 [install.md](docs/install.md) 的「更新」。
+
+## 沙盒和模式
+
+預設**沙盒開著、一般模式**：指令在作業系統的沙盒裡跑（碰得到的只有工作目錄和你加進來的資料夾），改檔先秀 diff 問你、白名單的指令直接跑、其他的問。大部分的人不用改。
+
+| | 沙盒 | 模式 |
+|---|---|---|
+| 管什麼 | 碰得到哪裡：指令有沒有被關住、工具能讀能改的範圍 | 要不要先問你 |
+| 選項 | 開、關 | 唯讀、計劃、一般、自動改檔、全自動、全部不問 |
+| 預設 | 開 | 一般 |
+| 換 | 在 xj 裡 `/sandbox off`、`/sandbox on`；設定檔 `sandbox.enabled`、指令列 `--no-sandbox` | 在 xj 裡 Shift-Tab、`/mode`；設定檔 `defaultMode`、指令列 `--auto`、`--dangerously-skip-permissions` |
+
+| 你的情況 | 沙盒 | 模式 |
+|---|---|---|
+| 平常開發 | 開 | 一般（或自動改檔） |
+| 程式碼信得過、想少被問 | 開 | 全自動 |
+| 讓它自己跑一段、不停下來等你 | 開 | 全部不問 |
+| 要用 docker、flutter | 開：docker 列進 `excludedCommands`；flutter 內建就會在沙盒外跑（每次問） | 照上面選 |
+| 可以整個丟掉的容器、虛擬機 | 關（沙盒起不來的話，那台的設定檔寫 `sandbox.enabled: false`） | 全部不問 |
+
+每個模式在沙盒開著、關掉時怎麼做，見[使用說明](docs/usage.md)的「沙盒和模式」；每一種情況要寫的設定，見[該怎麼設](docs/setup-guide.md)。
 
 ## 文件
 
 - [快速開始](docs/quickstart.md)：從拿到 API key 到第一次改檔
-- [使用說明](docs/usage.md)：模式、權限詢問、斜線指令、狀態列、花費
+- [使用說明](docs/usage.md)：沙盒和模式、權限詢問、加進來的資料夾、斜線指令、狀態列、背景跑、花費和預算、改設定
+- [該怎麼設](docs/setup-guide.md)：照你的情況設沙盒和模式（Docker、別的資料夾、少被問、讓它自己跑、容器）
 - [設定檔](docs/config.md)、[疑難排解](docs/troubleshooting.md)（有問題先跑 `xj doctor`）
 - [讓別的程式叫 xj（MCP）](docs/mcp-server.md)：Claude Desktop、IDE、你自己寫的通訊軟體橋接；預設唯讀
 - [資料在哪、怎麼刪](docs/privacy.md)、[安全說明](docs/cerberus.md)、[回報安全問題](docs/SECURITY.md)

@@ -1,8 +1,9 @@
 # 設定檔
 
-位置：`~/.xing-janus/config.json`。完整的格式在 [`config.schema.json`](config.schema.json)，`xj doctor` 會照它檢查。
+位置：`~/.xing-janus/config.json`。完整的格式在 [`config.schema.json`](config.schema.json)，`xj doctor` 會照它檢查，「設定檔放寬的」那一列列出比預設寬鬆的地方（關掉沙盒、`allowBypass`、`"*"` 的網域、拿掉的內建規則…）。
 **每一項都有預設值，什麼都不寫也能用**：設定檔只要寫你想改的那幾項（`xj setup` 會寫上預設的模型、介面和回覆的語言、提示音）。下表的「預設」就是沒寫的時候用的值，或 xj 自己怎麼決定。
 `xj setup` 會在設定檔裡寫上 `"$schema"`：用 VS Code 這類編輯器打開，會自動補完、顯示每一欄的說明、打錯當場標出來。
+在 xj 裡也改得到：`/config` 選單（常用的那幾項），或請模型照你的情況提議（`settings_propose`，你答應了 xj 才寫）；哪幾項改得到見下面「在 xj 裡改設定」，怎麼用見 usage.md 的「改設定」。
 詢問時選「永久允許」會寫進 `permissions.allow`、`sandbox.allowedDomains`、MCP server 的 `autoApprove`，Windows 開沙盒時問的那兩題寫進 `sandbox.autoFixWritable`、`sandbox.writablePrograms`（只改那一欄，寫之前整份檢查過；設定檔本身有錯就不寫）；用 `/permissions` 看、拿掉。
 
 | 欄位 | 預設 | 說明 |
@@ -10,26 +11,30 @@
 | `version` | `1` | 設定檔格式的版本：xj 自己寫，格式改了會自動轉換，不用自己改 |
 | `defaultModel` | `anthropic:claude-opus-5-5` | 預設的廠商和模型。寫系列名稱（`anthropic:opus`）就自動用最新的。模型的名字照服務給的（例如 llama.cpp 的檔案路徑），不能有控制碼和看不見的字。`xj setup` 會照你選的那一家改寫這一項，`/model` 換了也會改寫 |
 | `effort` | `{ "default": "high" }` | 每個模型的預設推理強度，鍵是模型 ID、系列名稱或 `default`。模型不支援那個等級的話用模型自己的預設；不支援推理強度的模型不送 |
-| `defaultMode` | `normal` | `normal`、`auto-edit`、`full-auto`（全自動，等於每次都加 `--auto`，見 usage.md）、`plan`、`read-only`。`xj -p` 不吃 `auto-edit`、`full-auto`（用一般模式），全自動要明確加 `--auto`。全部不問不能設成預設：每次都要加 `--dangerously-skip-permissions` |
+| `defaultMode` | `normal` | `normal`、`auto-edit`、`full-auto`（全自動，等於每次都加 `--auto`，見 usage.md）、`plan`、`read-only`、`bypass`（全部不問：要 `allowBypass`，沒有的話從一般模式開始、開場講原因；開 xj 時照樣打字確認，取消的話也從一般模式開始）。`xj -p` 不吃 `auto-edit`、`full-auto`、`bypass`（用一般模式），全自動、全部不問要明確加旗標 |
+| `allowFullAuto` | `false` | `true`：Shift-Tab、`/mode` 切得到全自動（等於每次都加了 `--auto`，但不直接進去）。沒開的話，啟動時加 `--auto`、`defaultMode` 寫 `full-auto` 也算 |
+| `allowBypass` | `false` | `true`：Shift-Tab、`/mode` 切得到全部不問；每次開 xj 第一次進去要打字確認。用 root、系統管理員權限跑照樣不行；`xj -p`、`xj mcp` 不看它。沒開的話，啟動時加 `--dangerously-skip-permissions` 也算 |
 | `uiLanguage` | 照系統的語言 | 介面的語言：`zh-TW` 或 `en`。沒寫的話看環境變數 `LC_ALL`、`LC_MESSAGES`、`LANG` 第一個有設的（`C`、`POSIX` 不算），都沒設就照作業系統的地區設定：`zh` 開頭的用繁體中文，其他用英文。第一次啟動時問（照這個預先選好），`/language ui` 會改它 |
 | `language` | 跟介面一樣（中文介面是 `繁體中文`、英文介面是 `English`） | AI 回覆的語言，照你平常的寫法寫（例如 `English`、`Deutsch`） |
 | `notify` | `false` | 一輪跑完、要問你的時候響一聲 |
 | `screen` | `fullscreen` | 畫面：`fullscreen` 是全螢幕模式（寬的視窗右邊放待辦清單和目前的狀態，PageUp／PageDown 和滾輪捲動）；`classic` 是一般模式（終端機自己捲動、搜尋、選取複製）。全螢幕開不了的時候（輸出不是終端機、舊的 Windows 主控台）自動用一般模式。`/tui` 切換時會寫進來 |
-| `enterToApprove` | `true` | 詢問時按 Enter 就是「是」（預設開，跟 Claude Code 一樣；寫 `false` 就一律要按 y）（網域的詢問是「允許一次」）。危險的指令、還沒看完的內容、永久允許的確認照樣要按 `y`；詢問剛出現的 0.5 秒內的 Enter 不算（可能是你剛好在按）。信任資料夾的問題不能用 Enter |
-| `statusBar.fields` | `model`、`key`、`effort`、`mode`、`sandbox`、`context`、`todo`、`day-cost`、`month-cost`、`progress` | 狀態列顯示哪些欄位，照重要程度排：視窗太窄時從最後面開始省略。另外有 `session-cost`（這次對話的花費）。`todo` 是待辦清單（沒有清單、或全部完成時不佔位置；2026-10-22 加的，之前就自己寫了這一項的，要自己加上 `todo` 才看得到）。`key` 是同一家好幾把 key 的話現在用哪一把（只有一把的話不佔位置；2026-10-29 加的，自己寫了這一項的一樣要自己加） |
-| `budget` | 每輪 $5、每天 $30、每月 $100、帳單週期從 1 號開始 | `perTurnUsd`、`perDayUsd`、`perMonthUsd`（美元），`cycleStartDay`（帳單週期從每月幾號開始，1～28）、`unknownRequestsPerTurn`（一輪裡幾個查不到價格的請求就停下來問，預設 10：算不出花了多少錢，金額的上限管不到它們；用本機的服務不想被問的話填 0，或在價格表替那個模型填 0）。到 80% 提醒、到 100% 停下來問。上限是拿**預估**的花費來比的（本機價格表 × 用量），不是服務商的帳單；填 0 等於關掉那一項。`xj setup` 不會問你這個 |
+| `enterToApprove` | `true` | 詢問時按 Enter 就是「是」（預設開，跟 Claude Code 一樣；寫 `false` 就一律要按 y）（網域的詢問是「允許一次」）。危險的指令、還沒看完的內容、永久允許的確認、放寬的（`/sandbox off`、`/config` 和模型提議裡放寬的設定）、`/budget` 寫進設定檔照樣要按 `y`；詢問剛出現的 0.5 秒內的 Enter 不算（可能是你剛好在按）。是／否的問題（信任資料夾、加進來的資料夾也要能改嗎）不能用 Enter |
+| `statusBar.fields` | `model`、`key`、`effort`、`mode`、`sandbox`、`folders`、`jobs`、`context`、`todo`、`turn-cost`、`day-cost`、`month-cost`、`progress` | 狀態列顯示哪些欄位，照重要程度排：視窗太窄時從最後面開始省略（模型一定會顯示）。另外有 `session-cost`（這次對話的花費）。`key` 是同一家好幾把 key 的話現在用哪一把（只有一把的話不佔位置）；`folders` 是連工作目錄一共幾個資料夾（「資料夾 3」：加進來的、`extraReadable` 的都算；只有工作目錄時不佔位置）；`jobs` 是在背景跑的指令有幾個（「背景 2」；沒有的話不佔位置）；`todo` 是待辦清單（沒有清單、或全部完成時不佔位置）；`turn-cost` 是這一輪的花費和上限（模型在跑的時候才有）；`day-cost`、`month-cost` 是今天、本月的花費和上限。自己寫了這一項的，新版加的欄位要自己加上才看得到（0.1.1 加了 `key`；0.1.5 加了 `folders`、`jobs`、`turn-cost`） |
+| `budget` | 每輪 $5、每天 $30、每月 $100、帳單週期從 1 號開始 | `perTurnUsd`、`perDayUsd`、`perMonthUsd`（美元），`cycleStartDay`（帳單週期從每月幾號開始，1～28）、`unknownRequestsPerTurn`（一輪裡幾個查不到價格的請求就停下來問，預設 10：算不出花了多少錢，金額的上限管不到它們；用本機的服務不想被問的話填 0，或在價格表替那個模型填 0）。到 80% 提醒、到 100% 停下來問。上限是拿**預估**的花費來比的（本機價格表 × 用量），不是服務商的帳單；填 0 等於關掉那一項。`xj setup` 不會問你這個；在 xj 裡用 `/budget` 看、改（可以只改這次對話），`/config` 也改得到每輪、每天、每月的上限（這次對話也照新的算）。模型自己改不了（可以提議，你答應才寫）。見 usage.md 的「花費和預算」 |
+| `commands` | 前景 2 分鐘、最長 10 分鐘；背景 60 分鐘 | 指令（bash、PowerShell）的時間上限：`timeoutSec`（模型沒指定時跑多久就收掉，秒）、`maxTimeoutSec`（模型最多能指定多久，秒；不能比 `timeoutSec` 短）、`backgroundMaxMinutes`（放到背景的最長跑多久，分；0 是不限，例如開發伺服器）。模型自己改不了（可以提議，你答應才寫）；`/config` 改得到。改了之後下次開 xj 起照新的。見 usage.md 的「指令的時間上限、背景跑」 |
 | `limits` | 每輪 100 次工具呼叫、每次請求最多輸出 64000 token | `toolCallsPerTurn`：每輪最多幾次工具呼叫，碰到就停下來問你。`maxOutputTokens`（至少 1024）：每次請求的輸出上限，不會超過模型自己的上限；碰到它不會停下來問（回覆被截斷時提醒一聲，被截斷的工具呼叫不執行） |
-| `permissions` | 每一項都是空的（內建的白名單、危險清單、機密檔照樣生效） | **內建的一直都在**（有哪些見下面「內建的白名單、危險清單、機密檔」），這裡只寫你要增減的：`allow`／`allowRemove`（白名單）、`danger`／`dangerRemove`（危險清單，拿掉的寫名稱）、`secretFiles`／`secretFilesRemove`（機密檔）。`extraReadable`：工作目錄以外也讓它讀的資料夾（家目錄本身、放憑證的資料夾像 `~/.ssh`、`~/.aws`，和包含它們的上層，都不採用，開場會講）。沒有要放寬或收緊的話不用寫 |
-| `sandbox.toolchainReadable` | `~/.gitconfig`、`~/.config/git`、`~/.cargo`、`~/.rustup`、`~/.pyenv`、`~/.nvm`、`~/.volta`、`~/development/flutter`、`~/fvm`、`~/.pub-cache`、`~/.gradle`、`~/.android`、`~/Library/Android/sdk`（不存在的略過） | 沙盒裡的指令讀得到的工具鏈（工作目錄以外；家目錄的其他地方讀不到）。`~/.gitconfig`、`~/.config/git` 只有 `sandbox.gitconfig` 是 `"full"` 時才開（預設的 `"filtered"` 給沙盒的是過濾過的那一份）。Windows（2026-10-21）：開放一個資料夾要逐檔改權限，所以用預設值的時候照專案的種類開（有 `package.json` 才開 npm 全域、有 `build.gradle` 這類 Gradle 檔才開 Android SDK 和 `~/.gradle`…；還看不出是哪種專案時（全新的空資料夾），Node、Python 的照開；Flutter 專案（`pubspec.yaml`）不開 Flutter SDK、Pub cache，它底下的 `android/` 也不算 —— flutter、dart 一律在沙盒外跑，開了只會讓開沙盒多等），大的工具鏈只開用得到的部分；自己寫了這一項或 `writable` 的話照你寫的開，xj 不再自己加 |
+| `permissions` | 每一項都是空的（內建的白名單、危險清單、機密檔照樣生效） | **內建的一直都在**（有哪些見下面「內建的白名單、危險清單、機密檔」），這裡只寫你要增減的：`allow`／`allowRemove`（白名單）、`danger`／`dangerRemove`（危險清單，拿掉的寫名稱）、`secretFiles`／`secretFilesRemove`（機密檔）。`extraReadable`：工作目錄以外也讓它讀的資料夾（家目錄本身、放憑證的資料夾像 `~/.ssh`、`~/.aws`、xj 自己的 `~/.xing-janus`，和包含它們的上層，都不採用，開場會講）。`addDirs`：開 xj 時一起加的資料夾，見下面「開 xj 時一起加的資料夾」。`bypassAsksCriticalDelete`（預設 `true`）：全部不問模式時，刪掉重要的地方（根目錄、根目錄下第一層、家目錄、工作目錄、加進來的資料夾，和它們的上層）照樣問，寫 `false` 就不問（usage.md 的「全部不問模式」）。沒有要放寬或收緊的話不用寫 |
+| `sandbox.toolchainReadable` | `~/.gitconfig`、`~/.config/git`、`~/.cargo`、`~/.rustup`、`~/.pyenv`、`~/.nvm`、`~/.volta`、`~/development/flutter`、`~/fvm`、`~/.pub-cache`、`~/.gradle`、`~/.android`、`~/Library/Android/sdk`（不存在的略過） | 沙盒裡的指令讀得到的工具鏈（工作目錄以外；家目錄的其他地方讀不到）。`~/.gitconfig`、`~/.config/git` 只有 `sandbox.gitconfig` 是 `"full"` 時才開（預設的 `"filtered"` 給沙盒的是過濾過的那一份）。Windows：開放一個資料夾要逐檔改權限，所以用預設值的時候照專案的種類開（有 `package.json` 才開 npm 全域、有 `build.gradle` 這類 Gradle 檔才開 Android SDK 和 `~/.gradle`…；還看不出是哪種專案時（全新的空資料夾），Node、Python 的照開；Flutter 專案（`pubspec.yaml`）不開 Flutter SDK、Pub cache，它底下的 `android/` 也不算 —— flutter、dart 一律在沙盒外跑，開了只會讓開沙盒多等），大的工具鏈只開用得到的部分；自己寫了這一項或 `writable` 的話照你寫的開，xj 不再自己加 |
 | `sandbox.writable` | `~/.pub-cache`、`~/.gradle` | 沙盒裡的指令寫得到的地方（工作目錄和暫存資料夾一定寫得到，不用寫） |
-| `sandbox.allowedDomains` | 空的 | 沙盒裡的指令不用問就能連的網域。空的就是每連一個新的網域都先問你（允許一次、這次對話、永久允許；選永久允許就寫進這裡） |
+| `sandbox.enabled` | `true` | 開 xj 時開不開沙盒。指令列的 `--sandbox`、`--no-sandbox` 蓋過它；全部不問模式不動它（沙盒和模式是分開的兩個設定）。`false` 的話指令以你的權限跑、白名單不生效（每個指令都問，全部不問除外），讀檔、改檔的工具也碰得到工作目錄以外（每個都問，全部不問除外；一律擋的照樣擋，見 usage.md 的「沙盒」）。`xj mcp` 一律開。在沙盒起不來的容器裡，那台的設定檔寫 `false`。開了 xj 之後用 `/sandbox off`、`/sandbox on` 換（只管那次對話，不改這一欄） |
+| `sandbox.allowedDomains` | 空的 | 沙盒裡的指令、`web_fetch` 不用問就能連的網域。空的就是每連一個新的網域都先問你（允許一次、這次對話、永久允許；選永久允許就寫進這裡）；全部不問模式、沙盒開著時不問，沒允許過的直接擋。`example.com` 是它的每個連接埠，`example.com:8080` 只有那個連接埠；`*.github.com` 是它底下的子網域（不含 `github.com` 本身）；`"*"` 是任何網域，每個模式都一樣（等於沙盒不管網路，全部不問模式也就不擋；本機、內網的位址、雲端 metadata 照樣擋） |
 | `sandbox.allowLocalBinding` | `false` | 讓沙盒裡的指令聽本機的連接埠（Flutter、Gradle 這類要的話設成 `true`）。**macOS 上同時放行連到這台電腦的每一個本機連接埠**（Ollama、資料庫、Docker 這類只聽本機的服務），不經過網域的詢問；需要的時候才開 |
 | `sandbox.gitconfig` | `filtered` | 沙盒裡的 git 讀哪一份全域設定：`"filtered"` 只留 `user.name`、`user.email` 這類無害的設定（你的 alias、`insteadOf` 在沙盒裡不生效），`"full"` 是整份 `~/.gitconfig`（裡面的網址、token 沙盒裡的指令都讀得到） |
 | `sandbox.excludedCommands` | 空的 | 在沙盒外跑的指令（每次都問），見下面「Docker」 |
 | `sandbox.allowUnsandboxedCommands` | `true` | 沙盒裡跑不了的工具（flutter 這類）能不能要求在沙盒外跑那一個指令（每次都問），見下面「沙盒裡跑不了的工具」 |
 | `sandbox.autoFixWritable` | `false` | Windows：開沙盒時發現沙盒的帳號寫得進 PATH 上的地方，不問就用系統管理員權限擋（照樣跳 UAC）。`false` 是問你一次，選「永久允許」就是寫成 `true`；`/permissions` 拿得掉，見 usage.md 的「全部不問模式」 |
 | `sandbox.writablePrograms` | `ask` | Windows：沙盒外會跑的程式（xj 的 git、Git Bash、`excludedCommands`、flutter 這類、MCP server、搜尋用的 rg）放在沙盒寫得進去的地方時怎麼辦 —— `"ask"` 開沙盒時問一次、這次對話有效，`"deny"` 不問、不在沙盒外跑（搜尋改在沙盒裡跑），`"allow"` 不問、照樣跑（每次用到照樣標紅）；選「永久允許」就是寫成 `"allow"`，`/permissions` 拿得掉，見 cerberus.md |
-| `windows` | `{}` | Windows 才用（2026-10-20）：`gitBash` 是 Git Bash 的 `bash.exe` 完整路徑、`powershell` 是 `pwsh.exe` 或 `powershell.exe` 的完整路徑。沒寫就自己找（Git Bash 照 PATH 上的 git.exe 和預設的安裝位置；PowerShell 先找 7 再用內建的；Microsoft Store 裝的 7 也算，沙盒開著時不用它）。不能是專案裡的檔案，也不能是 `C:\Windows\System32\bash.exe`（那是 WSL） |
+| `windows` | `{}` | Windows 才用：`gitBash` 是 Git Bash 的 `bash.exe` 完整路徑、`powershell` 是 `pwsh.exe` 或 `powershell.exe` 的完整路徑。沒寫就自己找（Git Bash 照 PATH 上的 git.exe 和預設的安裝位置；PowerShell 先找 7 再用內建的；Microsoft Store 裝的 7 也算，沙盒開著時不用它）。不能是專案裡的檔案，也不能是 `C:\Windows\System32\bash.exe`（那是 WSL） |
 | `env.passthrough` | `JAVA_HOME`、`ANDROID_HOME` | 指令跑在乾淨的環境裡：只留 `PATH`、`HOME`、`LANG`、`TERM`、`TMPDIR`（Windows 另外留系統要的那幾個，例如 `SystemRoot`），加上這裡列的；金鑰、token 這類不給 |
 | `keyFiles` | 空的（照環境變數 → 鑰匙圈或認證管理員找） | 沒有鑰匙圈的環境：廠商 → 金鑰檔。路徑要是絕對路徑或 `~` 開頭（Windows 要有磁碟代號，例如 `C:\keys\anthropic.txt`）：相對路徑會從工作目錄讀，設定檔不收。這些路徑自動算成機密檔。同一家好幾把的話鍵寫成「廠商:名字」（例如 `anthropic:work`） |
 | `keys` | 空的（每一家一把） | 同一家好幾把 key：這個資料夾用哪一把、被拒時怎麼辦、某一把另外的上限。見下面「同一家好幾把 key」 |
@@ -42,66 +47,92 @@
 | `evals.budgetUsd` | `2` | 開發用：每次評測最多花多少（美元）。評測（`node evals/run.ts`）只在原始碼的 repo 裡，發佈的版本沒有 |
 | `sessions.retentionDays` | `30` | 對話紀錄保留幾天：每次啟動自動清掉更舊的（`xj sessions prune` 也能手動清） |
 
+## 在 xj 裡改設定
+
+兩條路都由 xj 自己寫進設定檔（只改那幾欄、寫之前整份檢查過；設定檔本身有錯就不寫），放寬的要按 `y`。怎麼用見 usage.md 的「改設定」。
+
+- **`/config`** 改得到：`sandbox.enabled`、`defaultMode`（改不成 `bypass`，現在是 `bypass` 的也不在這裡改；改成 `full-auto` 要先開 `allowFullAuto`）、`allowFullAuto`、`budget` 的每輪、每天、每月、`commands`、
+  `uiLanguage`、`notify`、`enterToApprove`、`screen`、`permissions.addDirs`（在這個資料夾開 xj 的那一項）；`allowBypass` 只列出現在的值。
+- **模型提得了的**（`settings_propose`，你答應了才寫）：`sandbox.enabled`、`defaultMode`（`bypass` 除外）、`allowFullAuto`；
+  `permissions` 的 `allow`、`allowRemove`、`danger`、`secretFiles`、`extraReadable`、`addDirs`（在這個資料夾開 xj 的那一項）、`bypassAsksCriticalDelete`（只收 `true`）；
+  `sandbox` 的 `allowedDomains`（不收 `"*"`）、`writable`、`toolchainReadable`、`excludedCommands`、`allowLocalBinding`、`allowUnsandboxedCommands`；
+  `budget`、`commands`、`limits` 的每一項，`subagents` 的 `maxConcurrent`、`maxToolCalls`、`timeoutMinutes`；`defaultModel`、`effort.default`、`language`、`uiLanguage`、`notify`、`enterToApprove`、`screen`、`statusBar.fields`。
+  不信任的資料夾不收放寬的；`xj -p`、`xj mcp`、子代理不能提。
+- **模型不能提、要你自己改的**：`allowBypass`、`defaultMode: "bypass"`、`permissions.bypassAsksCriticalDelete: false`、`permissions.dangerRemove`、`permissions.secretFilesRemove`、
+  `mcp`、`mcpServer`、`providers`、`keys`、`keyFiles`、`env`，和上一項沒列的（`sandbox.gitconfig`、`windows`、`capabilities`、`anthropic`、`sessions`…）。
+
 ## 內建的白名單、危險清單、機密檔
 
 這些不用設定就有；`permissions` 只寫你要增減的。
 
-- **白名單**（沙盒開著時不用問就跑；沒有沙盒的時候（`--no-sandbox`、Windows 沒裝沙盒）不生效，每個指令都問）：唯讀的 `git status`、`git diff`、`git log`、`git show`、`git branch`、`git rev-parse`、`git ls-files`、`git blame`，`ls`、`pwd`、`cat`、`head`、`tail`、`wc`、`file`、`stat`、`which`、`echo`、`date`、`tree`、`du`、`df`、`rg`、`grep`、`find`；
+- **白名單**（沙盒開著時不用問就跑；沒有沙盒的時候（`--no-sandbox`、設定檔的 `sandbox.enabled` 是 `false`、對話裡 `/sandbox off` 關掉、Windows 沒裝沙盒）不生效，每個指令都問）：唯讀的 `git status`、`git diff`、`git log`、`git show`、`git branch`、`git rev-parse`、`git ls-files`、`git blame`，`ls`、`pwd`、`cat`、`head`、`tail`、`wc`、`file`、`stat`、`which`、`echo`、`date`、`tree`、`du`、`df`、`rg`、`grep`、`find`；
   測試、檢查用的 `npm test`、`npm run test`、`npm run lint`、`npm run typecheck`、`npm run build`、`npx tsc`、`npx vitest`、`npx eslint`、`npx prettier`、`pytest`、`cargo test`、`go test`、`flutter test`、`flutter analyze`、`dart analyze`、`dart test`、`dart format`。
   有些另外看參數（例如 `find -delete`、`git branch -D` 不算）。要加：`permissions.allow`（例如 `"make test"`）；要拿掉：`permissions.allowRemove`（例如 `"npm run build"`）。
-- **危險清單**（每次都問，全自動模式也問）。要拿掉某一項，把名稱寫進 `permissions.dangerRemove`；要加，寫指令的開頭進 `permissions.danger`（例如 `"terraform apply"`）：
+- **危險清單**（每次都問、標紅講原因，要按 `y` 才算，全自動模式也問；唯讀、計劃模式不准跑；全部不問模式不問，只有切換成 root、系統管理員的，和你自己加進 `permissions.danger` 的照樣問；刪掉重要的地方另外照樣問，見 usage.md 的「全部不問模式」）。
+  要拿掉某一項，把名稱寫進 `permissions.dangerRemove`；要加，寫指令的開頭進 `permissions.danger`（例如 `"terraform apply"`）。
+  照指令的字認：管線、`&&`、`bash -c`、`env`、`xargs` 裡面的每一段都看；寫成程式去做（`python -c "…"`、`node -e "…"`）就認不出來，這時候限制範圍的是沙盒：
 
   | 名稱 | 擋的是 |
   |---|---|
-  | `rm-recursive-force` | 刪除檔案（`rm -r`／`-f`／`-d`） |
+  | `rm-recursive-force` | 刪除檔案（`rm` 加 `-r`、`-R`、`-f`、`-d`，或 `--recursive`、`--force`、`--dir`） |
   | `find-delete` | 刪除檔案（`find -delete`） |
-  | `shred` | 徹底刪除檔案 |
-  | `git-reset-hard`、`git-checkout-discard`、`git-restore` | 丟掉改動（`git reset --hard`、`git checkout -- …`、`git restore`） |
+  | `shred` | 徹底刪除檔案（`shred`） |
+  | `git-reset-hard` | 丟掉改動（`git reset --hard`、`--merge`、`--keep`） |
+  | `git-checkout-discard` | 丟掉改動（`git checkout -- …`、`git checkout .`、`git checkout -f`） |
+  | `git-restore` | 丟掉改動（`git restore`） |
   | `git-clean` | 刪除沒被追蹤的檔案（`git clean -f`） |
-  | `git-stash-drop` | 丟掉暫存的改動（`git stash drop`／`clear`） |
-  | `git-branch-delete` | 刪除分支（`git branch -d`／`-D`） |
-  | `git-push` | 推送到遠端 |
-  | `publish` | 發佈套件 |
+  | `git-stash-drop` | 丟掉暫存的改動（`git stash drop`、`git stash clear`） |
+  | `git-branch-delete` | 刪除分支（`git branch -d`、`-D`、`--delete`） |
+  | `git-push` | 推送到遠端（`git push`，包括 `--force`） |
+  | `publish` | 發佈套件（`npm`、`yarn`、`pnpm`、`bun`、`cargo` 的 `publish`，`dart pub publish`、`flutter pub publish`、`twine upload`、`gem push`） |
   | `remote-shell` | 連到別的機器（`ssh`、`scp`、`rsync`、`sftp`） |
-  | `upload` | 往外送資料（`curl`／`wget` 上傳） |
+  | `upload` | 往外送資料：`curl` 帶資料（`-d`、`-F`、`-T`、`--data…`、`--form`、`--upload-file`、`--json`），或用 GET、HEAD 以外的方法（`-X POST` 這類）；`wget` 的 `--post-data`、`--post-file`、`--body-data`、`--body-file`，或 GET、HEAD 以外的 `--method` |
   | `sudo` | 切換成 root 執行（`sudo`、`su`、`doas`、`sudoedit`、`pkexec`、`run0`） |
-  | `chmod-chown-recursive` | 大範圍改權限（`chmod`／`chown -R`） |
-  | `disk` | 直接寫磁碟（`mkfs`、`dd`） |
-  | `power` | 關機或重開機 |
-  | `kill` | 強制結束程式（`kill -9`、`killall`） |
-  | `system-launch` | 請系統代為執行，可能跑在沙盒外（`open`、`osascript`、`launchctl`、`crontab`） |
-  | `windows-launch` | 請 Windows 代為執行，可能跑在沙盒外（`explorer`、`rundll32`、`mshta`、`wscript`） |
-  | `windows-elevate` | 切換成系統管理員執行（`gsudo`、`runas`、`-Verb RunAs`，或看不出內容的 PowerShell 指令） |
-  | `windows-shell` | 交給 cmd 或 PowerShell 執行（裡面的指令沒有逐一檢查） |
-  | `windows-system` | 改 Windows 的系統設定（登錄、排程、服務、權限、環境變數、防火牆） |
+  | `chmod-chown-recursive` | 大範圍改權限（`chmod`、`chown`、`chgrp` 加 `-R` 或 `--recursive`） |
+  | `disk` | 直接寫磁碟（`mkfs`、`dd`、`diskutil`） |
+  | `power` | 關機或重開機（`shutdown`、`reboot`、`halt`、`poweroff`） |
+  | `kill` | 強制結束程式（`kill -9`、`-KILL`、`-SIGKILL`、`-s`，`killall`、`pkill`） |
+  | `system-launch` | 請系統代為執行，可能跑在沙盒外（`open`、`osascript`、`launchctl`、`crontab`、`at`、`xdg-open`、`systemctl`、`systemd-run`） |
+  | `windows-launch` | 請 Windows 代為執行，可能跑在沙盒外（`explorer`、`rundll32`、`mshta`、`wscript`、`cscript`、`msiexec`） |
+  | `windows-elevate` | 切換成系統管理員執行（`gsudo`、`runas`；交給 `cmd`、`powershell`、`pwsh` 而且帶了 `runas` 的，或 `-EncodedCommand` 這種看不出內容的 PowerShell 指令） |
+  | `windows-shell` | 交給 cmd 或 PowerShell 執行（`cmd`、`powershell`、`pwsh`：裡面的指令沒有逐一檢查） |
+  | `windows-system` | 改 Windows 的系統設定：登錄、排程、服務、權限、環境變數、防火牆（`reg`、`regedit`、`schtasks`、`sc`、`setx`、`icacls`、`takeown`、`cacls`、`bcdedit`、`netsh`、`wmic`、`vssadmin`、`diskpart`、`cipher`、`wevtutil`、`certutil`、`bitsadmin`） |
   | `keychain` | 存取鑰匙圈、認證管理員（`security`、`cmdkey`、`vaultcmd`） |
-  | `system-dirs` | 寫系統目錄 |
+  | `system-dirs` | 用 `cp`、`mv`、`tee`、`install`、`ln`、`touch`、`mkdir`、`rm`、`rmdir`、`chmod`、`chown`、`truncate` 寫系統目錄：`/etc`、`/usr`、`/bin`、`/sbin`、`/lib`、`/opt`、`/boot`、`/var`、`/private`、`/System`、`/Library`、`/Applications`（macOS 的暫存資料夾除外），Windows 的 `C:\Windows`、`Program Files`、`ProgramData` |
+
+  用 `>` 重新導向寫到這些系統目錄也算（這一項 `dangerRemove` 拿不掉）。
+  PowerShell 的指令另外看一份（沒有名稱，`dangerRemove` 拿不掉）：遞迴刪除（`Remove-Item -Recurse`，和 `rm`、`del`、`rd` 這些別名）、
+  `Invoke-Expression`（`iex`）、連網路（`Invoke-WebRequest`、`Invoke-RestMethod`、`Start-BitsTransfer`）、開別的程式（`Start-Process`）、
+  改登錄（`Set-ItemProperty` 這類寫到 `HKLM:`、`HKCU:`）、改系統設定（`Set-ExecutionPolicy`、Defender 的設定、排程、服務）、
+  讀寫認證管理員（`CredRead` 這類、`PasswordVault`、`Get-StoredCredential`、`cmdkey`、`vaultcmd`）、`-EncodedCommand` 這種看不出內容的、
+  切換成系統管理員（`-Verb RunAs`、`runas`、`sudo`、`gsudo`）、寫系統目錄。
 
 - **機密檔**（讀、寫、搜尋都擋，但沙盒裡的指令間接改得到，見 cerberus.md；在對話裡按「是」也不行，只能改設定檔）：`.env`、`.env.*`、`*.pem`、`*.key`、`*.p12`、`*.pfx`、`*.keystore`、`*.jks`、`*.p8`、`*.ppk`（PuTTY），
   SSH 金鑰（`id_rsa`、`id_ed25519`、`id_ecdsa`、`id_dsa`、`id_ed25519_sk`、`id_ecdsa_sk` 和它們的 `.pub`），`credentials`、`credentials.json`、`credentials.toml`、`.npmrc`、`.netrc`、`.pypirc`、`.git-credentials`、`.envrc`，
   Android／Flutter 的 `local.properties`、`key.properties`、`keystore.properties`、`secrets.properties`、`adbkey`，家目錄的 `~/.gradle/gradle.properties`、`~/.docker/config.json`、`~/.kube/config`、`~/.config/gh/hosts.yml`、`~/.m2/settings.xml`、nvm 和 npm 裡的 `npmrc`，
-  加上 `keyFiles` 指的金鑰檔。不算的：`.env.example`、`.env.sample`、`.env.template`、`~/.android/debug.keystore`。要加：`permissions.secretFiles`（例如 `"*.secret"`）；要拿掉：`permissions.secretFilesRemove`（例如 `".npmrc"`）。
+  加上 `keyFiles` 指的金鑰檔。不算的：`.env.example`、`.env.sample`、`.env.template`、`~/.android/debug.keystore`。要加：`permissions.secretFiles`（例如 `"*.secret"`；樣式不分大小寫，`*` 是任何字（不跨資料夾，`**` 才跨）、`?` 是一個字、`[abc]` 是其中一個、`[!abc]` 或 `[^abc]` 是這幾個以外的）；要拿掉：`permissions.secretFilesRemove`（例如 `".npmrc"`）。
 
 ## 沙盒裡跑不了的工具（Flutter）
 
 有些工具在沙盒裡根本跑不起來：`flutter`、`dart`（和 `fvm`）每次執行都要寫 Flutter SDK 自己的資料夾（`bin/cache`），沙盒裡寫不進去，它會一直卡住。
-開放那個資料夾也不行：裡面的 `dart.exe` 這些之後會在沙盒外以你的權限執行，等於讓沙盒裡的程式改得到它們（2026-10-27 Windows 實測）。
+開放那個資料夾也不行：裡面的 `dart.exe` 這些之後會在沙盒外以你的權限執行，等於讓沙盒裡的程式改得到它們（Windows 實測）。
 
 所以（照 Claude Code 的做法）：沙盒開著時模型叫到這些指令，xj 不讓它卡住，直接告訴模型原因；模型會要求**在沙盒外跑那一個指令**，
 xj 就問你一次（標紅寫「在沙盒外用你的權限跑」和實際跑的是哪一支），按「是」才跑。不用改設定、不用關沙盒，其他指令照樣在沙盒裡。
 
 - 每次都問，全自動模式也問，不會有「永久允許」；跟 `excludedCommands` 一樣只放行單純的寫法（要單獨跑，不能接在別的指令後面）。
+- 全部不問模式、沙盒開著時：不拿到沙盒外跑、也不問，直接擋下並講怎麼辦（換到會問你的模式；flutter 這類也可以列進 `excludedCommands`，最後才是關掉沙盒）。
 - 只有這張表上的工具能要求在沙盒外跑（現在是 flutter、dart、fvm，和下面的安裝）；其他指令要求的話一律拒絕。以後有類似的工具會加進同一張表。
 
 **安裝工具**：這台沒裝某個工具時，模型會提議安裝，同一條路：每次都問你，按「是」才在沙盒外跑。
 - 只有 Windows 的 `winget install --scope user …`、`scoop install …`（加上它們的 search 這類查詢），macOS 的 `brew install …`。其他的安裝程式（choco、`npm -g`、pip…）不行。
 - `winget install` 一定要 `--scope user`（裝在你的帳號底下，不用系統管理員權限）。
 - **原則上不用系統管理員權限**：要的話，模型把完整的指令給你，你在系統管理員的終端機自己跑。你在對話裡明確說「可以直接跑」時，模型才會要求用系統管理員權限跑
-  （只有 `winget install`）：xj 照樣問你（標紅），Windows 還會跳 UAC 讓你按；全部不問模式也一樣問。
+  （只有 `winget install`）：xj 照樣問你（標紅），Windows 還會跳 UAC 讓你按；沒有沙盒的全部不問模式也一樣問（沙盒開著時照上面直接擋下）。
 - 裝好之後要**重開 xj**：PATH 和沙盒讀得到的範圍都是啟動時算的，新裝的指令要重開才找得到。
 - winget 裝在你帳號底下的（`--scope user`）沙盒讀得到：`sandbox.toolchainReadable` 用預設值的時候，xj 把 `%LOCALAPPDATA%\Microsoft\WinGet\Packages`、`Links` 開放給沙盒讀（跟 Scoop 一樣；自己寫了這一項的話，要自己列進去）。
-  **用系統管理員權限裝到整台電腦的，沙盒裡用不了**：winget 給那些檔案的權限沒有一般使用者，沙盒用另一個帳號跑（2026-10-28 實測）。沙盒外照常可以用；要在沙盒裡用就裝成 `--scope user`。
-- 不想要這個選項：設定檔寫 `"sandbox": { "allowUnsandboxedCommands": false }`，這些指令就一律拒絕；要用的話用 `xj --no-sandbox` 重開，或列進 `excludedCommands`。
+  **用系統管理員權限裝到整台電腦的，沙盒裡用不了**：winget 給那些檔案的權限沒有一般使用者，沙盒用另一個帳號跑（實測）。沙盒外照常可以用；要在沙盒裡用就裝成 `--scope user`。
+- 不想要這個選項：設定檔寫 `"sandbox": { "allowUnsandboxedCommands": false }`，這些指令就一律拒絕；要用的話在 xj 裡打 `/sandbox off` 關掉沙盒（或用 `xj --no-sandbox` 重開），或列進 `excludedCommands`。
 - 自己列進 `excludedCommands` 的照原本的做法（問、在沙盒外跑），不用模型要求。
 
 ## Docker：在沙盒外跑的指令
@@ -114,7 +145,7 @@ xj 就問你一次（標紅寫「在沙盒外用你的權限跑」和實際跑�
 ```
 
 - 寫 `"docker"` 是整個 docker；寫 `"docker compose"` 只有那個子指令。要寫指令的名字，不能寫路徑。
-- 列出來的指令**每次都問**，標紅寫「在沙盒外用你的權限跑」和實際跑的是哪一支；按「是」才跑。全自動模式也照樣問，不會有「都允許」。
+- 列出來的指令**每次都問**，標紅寫「在沙盒外用你的權限跑」和實際跑的是哪一支；按「是」才跑。全自動模式也照樣問，不會有「都允許」；全部不問模式不問，直接在沙盒外跑。
 - 只放行單純的寫法：可以用 `&&` 串幾個列出來的指令、接 `2>&1`、`>/dev/null`；不能接管線給別的指令、不能寫進檔案、
   不能有 `$( )`、不能在前面加環境變數（`PATH=`、`LD_PRELOAD=` 會換掉實際跑的程式）。寫法不行的時候直接拒絕，並告訴它怎麼改。
 - 程式照沙盒外的 PATH 找：專案、暫存區裡放的同名檔案（沙盒裡的指令放得進去）不算。
@@ -126,6 +157,33 @@ xj 就問你一次（標紅寫「在沙盒外用你的權限跑」和實際跑�
 設環境變數 `XING_JANUS_ALLOW_ROOT_BYPASS=1`（只認 `1`）。這個變數跟其他 `XING_JANUS_` 開頭的一樣，不會傳給它跑的指令。
 
 金鑰不寫在設定檔裡：放鑰匙圈（`xing-janus-<廠商>`）、環境變數 `XING_JANUS_<廠商>_API_KEY`，或 `keyFiles` 指的檔案。不要用 `ANTHROPIC_API_KEY`、`OPENAI_API_KEY` 這類通用的名稱：其他工具也會讀它們。
+
+## 開 xj 時一起加的資料夾
+
+在 A 開 xj、每次都要一起改 B、讀 C 的話，寫在 `permissions.addDirs`（只在你自己的設定檔：專案裡的檔案加不了資料夾）：
+
+```json
+{
+  "permissions": {
+    "addDirs": {
+      "~/work/app": [
+        { "path": "~/work/api", "write": true },
+        { "path": "~/work/docs" }
+      ]
+    }
+  }
+}
+```
+
+- 鍵是開 xj 的資料夾：在它或它底下的子資料夾開 xj 都算（照實際路徑比，symlink 指到的也一樣）；對到好幾條的話全部都加，照寫的順序。
+- 值是要加的資料夾：`write: true` 是也能改（跟 `/add-dir` 選「也能改」一樣：要在電腦前面信任過，沒信任過的開 xj 時先問，不信任就只能讀），沒寫就是只能讀。
+- 路徑都要是絕對路徑或 `~` 開頭（相對路徑會跟著在哪裡開 xj 變）。
+- 跟 `/add-dir` 同一套規矩（usage.md 的「加進來的資料夾」）：家目錄、它的上層、根目錄、放憑證的資料夾不加；機密檔、受保護的檔案照樣擋。
+  開 xj 時加的換對話（`/clear`、`/resume`）也在，`/add-dir remove` 才拿掉（只算那次開的 xj）。
+- 只有這一次要加的，用指令列的 `xj --add-dir <路徑>`（也能改，可以寫好幾個）。`xj -p` 也照這兩個加，但沒辦法問信任：沒信任過的只能讀。
+  `xj mcp` 不收 `--add-dir`、也不看 `permissions.addDirs`（它碰得到的資料夾照 `mcpServer.projects`）。
+- 在 xj 裡：`/config` 的「一起加的資料夾」把這次對話 `/add-dir` 加的記進這個資料夾的那一項，或拿掉記下來的（上層資料夾的那幾項只列出來）；
+  模型也可以提議改這一項（你答應才寫）。
 
 ## 同一家好幾把 key
 

@@ -52,12 +52,39 @@ Every other setting has a default; to change one, see [config.md](docs/en/config
 
 - **Switching platforms and models**: type `/model` inside xj. Servers on this computer (Ollama, LM Studio…) are found for you, and you can add other OpenAI-compatible services; a missing key is pasted right there, and the choice is remembered.
 - **Interface language**: `/language ui en` or `/language ui zh-TW`.
+- **Changing settings**: type `/config` inside xj (the common settings, each saying what changing it does); or just ask xj "I need docker, what should I set?": it answers from your current settings and can propose changes, written to the config only if you approve ("Changing settings" in [usage](docs/en/usage.md)).
+- **Working on another folder**: `/add-dir ../api` asks whether it is read-only or editable too (editable ones must be trusted and follow the same rules as the working folder); folders to add every time you open xj in this project go in `permissions.addDirs` in the config.
+- **Seeing permissions**: `/permissions` first shows the current mode, sandbox and folders, then lists what you always allowed (removable), what the config changed, and the built-in rules.
+- **Budget**: by default $5 per turn, $30 per day and $100 per month, and at a limit xj stops and asks you; `/budget` shows what was spent and changes a limit (for example `/budget day 50`).
+- **Long commands**: a command is stopped after 2 minutes by default (the model can ask for up to 10 minutes; `/config` changes the limits); for whole test suites or dev servers, ask it to run them in the background and use `/jobs` to see the output or stop them.
 - **Updating**: if you installed by hand, `xj update` only installs after the SHA-256 and the signature check out; with Homebrew, use `brew upgrade xj` (the tap checks the signature before updating the formula). When updating from v0.1.1 or v0.1.2, first read "Update" in [install.md](docs/en/install.md).
+
+## Sandbox and modes
+
+By default **the sandbox is on and the mode is normal**: commands run in the operating system's sandbox (reaching only the working folder and folders you add), edits show a diff and ask, whitelisted commands run directly, and the rest ask. Most people do not need to change anything.
+
+| | Sandbox | Mode |
+|---|---|---|
+| Decides | What can be reached: whether commands are confined, the scope the tools can read and edit | Whether xj asks you first |
+| Options | On, off | Read-only, plan, normal, auto-edit, full-auto, skip all permissions |
+| Default | On | Normal |
+| Change | In xj, `/sandbox off`, `/sandbox on`; `sandbox.enabled` in the config, `--no-sandbox` on the command line | In xj, Shift-Tab, `/mode`; `defaultMode` in the config, `--auto`, `--dangerously-skip-permissions` on the command line |
+
+| Your situation | Sandbox | Mode |
+|---|---|---|
+| Everyday development | On | Normal (or auto-edit) |
+| You trust the code and want fewer questions | On | Full-auto |
+| Let it run for a while without stopping for you | On | Skip all permissions |
+| You need docker or flutter | On: list docker in `excludedCommands`; flutter runs outside the sandbox by itself (asking each time) | As above |
+| A throwaway container or virtual machine | Off (if the sandbox cannot start there, write `sandbox.enabled: false` in that machine's config) | Skip all permissions |
+
+For how each mode behaves with the sandbox on and off, see "Sandbox and modes" in the [usage guide](docs/en/usage.md); for the settings to write in each situation, see [What to set](docs/en/setup-guide.md).
 
 ## Documents
 
 - [Quick start](docs/en/quickstart.md): from getting an API key to your first edit
-- [Usage](docs/en/usage.md): modes, permission questions, slash commands, the status bar, cost
+- [Usage](docs/en/usage.md): sandbox and modes, permission questions, added folders, slash commands, the status bar, background jobs, cost and budget, changing settings
+- [What to set](docs/en/setup-guide.md): set the sandbox and mode for your situation (Docker, other folders, fewer questions, letting it run, containers)
 - [The config file](docs/en/config.md), [Troubleshooting](docs/en/troubleshooting.md) (run `xj doctor` first when something is wrong)
 - [Letting other programs call xj (MCP)](docs/en/mcp-server.md): Claude Desktop, IDEs, a chat-app bridge you write; read-only by default
 - [Where your data is and how to delete it](docs/en/privacy.md), [Security](docs/en/cerberus.md), [Reporting security issues](docs/en/SECURITY.md)

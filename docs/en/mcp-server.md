@@ -10,8 +10,11 @@ when xj needs your approval it asks through MCP elicitation, and the bridge turn
 
 - Run `xj` once in a terminal: accept the notice and set up a key.
 - Open each folder you want xj to work in once with `xj` at the computer and choose to trust it. **A new folder cannot be trusted through MCP**.
-- The sandbox must be on and able to block everything (the "OS sandbox" row of `xj doctor`; on Windows, a sandbox that "cannot block everything" does not count). Without it `xj_task` is always refused; `--no-sandbox`, bypass mode and `--auto` cannot be used here.
+- The sandbox must be on and able to block everything (the "OS sandbox" row of `xj doctor`; on Windows, a sandbox that "cannot block everything" does not count). Without it `xj_task` is always refused;
+  `"sandbox": { "enabled": false }` in the config does not count here (the sandbox is started anyway; on a machine where it cannot start, `xj mcp` cannot be used), and `--no-sandbox`, bypass mode and `--auto` cannot be used here.
 - After changing `mcpServer` in the config file, restart the MCP client: `xj mcp` reads its settings only when it starts, and once they have changed it takes no new tasks and asks you to restart (whether you relaxed or tightened them).
+- Differences from using xj in a terminal: it does not take `--add-dir` and does not add `permissions.addDirs` from the config (the folders it reaches are `mcpServer.projects` below);
+  nothing runs in the background (a command runs at most until `commands.maxTimeoutSec` in the config, 10 minutes by default); the model cannot propose setting changes (`settings_propose`), and the built-in `xj-settings` skill is not offered (your settings are not shown to the program calling xj).
 
 ## Connecting a client
 

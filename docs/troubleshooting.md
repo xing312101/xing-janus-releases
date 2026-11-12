@@ -4,8 +4,16 @@
 
 | 狀況 | 怎麼辦 |
 |---|---|
-| 沙盒啟動不了 | 照 `xj doctor` 說的裝好缺的東西（macOS：ripgrep；Linux：bubblewrap、socat、ripgrep、sandbox-runtime）。這時所有指令一律拒絕；真的要不經過沙盒跑，啟動時加 `--no-sandbox`（每個指令都要問） |
+| 沙盒啟動不了 | 照 `xj doctor` 說的裝好缺的東西（macOS：ripgrep；Linux：bubblewrap、socat、ripgrep、sandbox-runtime）。這時所有指令一律拒絕；真的要不經過沙盒跑，在 xj 裡打 `/sandbox off`、啟動時加 `--no-sandbox`，或那台的設定檔寫 `"sandbox": { "enabled": false }`（每個指令都要問） |
 | Linux：找不到 apply-seccomp、版本不對 | 照訊息裡的那一行重裝 sandbox-runtime（`npm install -g --ignore-scripts @anthropic-ai/sandbox-runtime@<版本>`，見 [install.md](install.md) 的「Linux 的沙盒」）。用 nvm 的話，用跑 xj 的那個 Node 版本來裝 |
+| 在容器裡加了 `--dangerously-skip-permissions`，指令卻一律被拒絕（說沙盒啟動不了） | 0.1.5 起全部不問只換模式、不再順便關沙盒：沙盒起不來的容器、虛擬機裡，指令就一律拒絕。那台的設定檔寫 `"sandbox": { "enabled": false }`（之後每次都不開），或啟動時再加 `--no-sandbox`；已經開著的話打 `/sandbox off`（要按 `y`） |
+| 全部不問模式還是會擋、會問 | 沙盒開著的全部不問：網路只到允許過的網域，沒列的不問就擋（常用的加進設定檔的 `sandbox.allowedDomains`）；沙盒裡跑不了的工具（flutter、dart、fvm、安裝程式）不拿到沙盒外跑，畫面講怎麼辦（換到會問你的模式、列進 `sandbox.excludedCommands`，最後才是 `/sandbox off`）。不管沙盒開不開，切換成 root、刪掉重要的地方（根目錄、家目錄、工作目錄和它的上層、加進來的資料夾…）、你自己加進 `permissions.danger` 的照樣問（見 usage.md 的「全部不問模式」） |
+| Shift-Tab 切不到全自動、全部不問 | 設定檔沒開放：寫 `"allowFullAuto": true`、`"allowBypass": true`，或這次啟動時加 `--auto`、`--dangerously-skip-permissions`。`/mode` 會列出這次切不到的和原因（例如資料夾不信任、用 root 跑） |
+| 狀態列整列變紅 | 全部不問模式、又沒有沙盒：什麼都不問，指令以你的權限跑。只有其中一樣的話不會整列標紅（沙盒關掉時那一格寫是哪裡關的，例如「沙盒關（設定檔）」）。要收回來：Shift-Tab、`/mode` 換模式，或 `/sandbox on` |
+| 狀態列沒有「資料夾」「背景」「這輪」 | 設定檔自己寫了 `statusBar.fields` 的話，照你寫的顯示：0.1.5 新的 `folders`、`jobs`、`turn-cost` 要自己加進去（拿掉這一項就是預設的全部）。「資料夾」只在加了資料夾、「背景」只在有指令在背景跑、「這輪」只在模型在跑的時候出現 |
+| `xj doctor` 的「設定檔放寬的」那一列標成警告 | 設定檔有比預設寬鬆的地方，那一列列出是哪幾欄（關掉沙盒、允許切到全自動、全部不問、`allowedDomains` 有 `"*"`…）。是你自己要的就不用管；不是的話照列的那一欄改設定檔（常用的也可以在 xj 裡打 `/config` 改） |
+| 指令跑到一半被收掉（「逾時：跑了 120 秒被收掉」） | 前景的指令有時間上限：沒指定的話 2 分鐘（設定檔的 `commands.timeoutSec`），模型最多可以要到 10 分鐘（`commands.maxTimeoutSec`）。很久的（整套測試、第一次 build、開發伺服器）叫它放到背景跑：`/jobs` 看輸出、停掉，最長 60 分鐘（`commands.backgroundMaxMinutes`，0 是不限）。要調上限，在 xj 裡打 `/config` 選「指令的時間上限」或直接改設定檔，下次開 xj 起生效。`xj -p`、`xj mcp` 不能放到背景，只能調高上限（見 usage.md 的「指令的時間上限、背景跑」） |
+| 背景的指令一直印（例如寫錯的腳本一直印同一個錯誤），對話的資料夾變得很大 | 背景的指令印的每一行都存在那個對話的 `outputs/job-<編號>.log`（給你和模型之後看）：一直印的話一分鐘可以寫到 1 GB 以上。印超過 5 GB 的會被停掉、輸出檔縮成開頭和最後一段；不用等到那時候，`/jobs stop <編號>` 停掉它。那個檔跟著對話紀錄保留 30 天（`sessions.retentionDays`，每次開 xj、`xj sessions prune` 時清掉更舊的），要馬上清就直接刪掉那個檔 |
 | 401、403 | key 錯了或沒有權限。`xj doctor` 會說 key 從哪裡讀的 |
 | `/model` 換不過去（查詢失敗、連不上） | 換到別的平台之前，xj 會先查一次那一家的模型清單，查不到就照舊用原本的。本機的伺服器（Ollama、LM Studio…）要先開著；網址錯了改設定檔的 `providers`。金鑰被拒：還沒設金鑰的那一家會當場問你；已經有金鑰、但被拒的，用 `xj setup` 換一把。說「選的是叫…的那一把」：設定檔的 `keys` 指定了有名字的那一把，照 config.md 的「同一家好幾把 key」放好，或用 `/key` 換。輸入不是終端機（管線）時不能當場設金鑰，用 `xj setup` |
 | 說「…的網址是沒加密的 http、又不在這台…xj 不送」 | 那一家的金鑰會以明文送出（同一個網路上的人看得到），所以 xj 不送：開 xj 時不接那一家、`/model` 換不過去、`xj doctor` 不拿去問。改用 https 的網址；那個服務只有 http、你也確定要送的話，在設定檔的 `providers.<名稱>` 加上 `"allowPlainHttpKey": true`。不用金鑰的服務不受影響 |
@@ -46,7 +54,7 @@
 | 沙盒裡找不到 node、python 這類工具 | 沙盒用另一個帳號（`srt-sandbox`）跑，裝在你帳號底下的工具它讀不到。**開場如果有「PATH 上有、沙盒裡讀不到」的工具，xj 會直接講是哪一個、裝在哪裡、怎麼開**（2026-10-27 加的；指令真的因此失敗時也會告訴模型「這台有，只是沙盒讀不到」，免得它叫你去裝已經裝好的東西）。xj 照專案的種類開放常見的位置：一律開 Node 的安裝資料夾、per-user 的 Git、Scoop、winget 裝在你帳號底下的（`WinGet\Packages`、`Links`）；Node 專案（有 `package.json`）再開 npm 全域安裝；Python 專案開 per-user 的 Python；**還看不出是哪種專案時（全新的空資料夾，例如「幫我開一個 Python 專案」）Python 和 Node 的位置照樣開**；Rust 專案（有 `Cargo.toml`）開 `~/.cargo`、`~/.rustup`；Android 專案（有 `build.gradle` 這類 Gradle 檔）開 Android SDK、`~/.gradle`。Flutter 專案不開 Flutter／fvm、Pub cache（flutter、dart 一律在沙盒外跑，見 config.md「沙盒裡跑不了的工具」）。其他的請改裝在整台電腦（Program Files；用 winget 的話見下一列），或加進設定的 `sandbox.toolchainReadable`（自己寫了這一項的話，xj 就照你寫的開，不再自己加） |
 | 沙盒裡找不到用 winget 裝到整台電腦的工具（jq 這類），用路徑叫是 Permission denied | 用系統管理員權限 `winget install`（沒加 `--scope user`）裝的可攜式工具放在 `Program Files\WinGet`：資料夾大家都讀得到，執行檔本身卻只有裝的帳號和系統管理員能跑（winget 先下載到你的暫存資料夾再搬過去，權限跟著走），沙盒的帳號跑不了。**xj 會講是哪一個和 winget 的套件 ID**（開場、指令真的因此失敗時都講，Git Bash 和中文的 PowerShell 都認得；也會告訴模型不要說「沒有安裝」）。要在沙盒裡用：改用 `winget install --scope user --id <套件 ID>` 重裝（裝在你帳號底下，xj 會開放給沙盒），再重開 xj；或把那個指令加進設定檔的 `sandbox.excludedCommands`（在沙盒外跑、每次問）。加進 `toolchainReadable` 沒用：擋住沙盒的是檔案自己的權限 |
 | 沙盒裡的 Gradle 說 `~/.gradle` 底下的某個資料夾建不了（Access is denied） | Windows 的沙盒只開放 `~/.gradle` 底下已經有的資料夾寫入，`wrapper`、`init.d` 只給讀（整個開放的話，會在沙盒外被執行的 wrapper、init 腳本要另外擋，啟動、離開各多十幾秒）。新的資料夾請在沙盒外跑一次 Gradle（例如 `flutter build apk`）讓它建好；或在設定檔的 `sandbox.writable` 自己列（例如 `["~/.gradle", "C:\\Users\\<你>\\AppData\\Local\\Pub\\Cache"]`：自己寫了這一項，xj 就照你寫的整個開，不再拆開，比較慢） |
-| 沙盒裡的 git 說 `detected dubious ownership` | Windows 的沙盒用另一個帳號跑，你的 repo 對它來說「擁有者是別人」，git 要列在 safe.directory 才肯用。xj 自己列：專案、專案裡**開沙盒時已經有的**巢狀 repo（submodule 這類）、可寫的範圍、工具鏈，和你自己在 `~/.gitconfig` 設的 `safe.directory`（單獨一個 `*` 除外）。**用 `/add-dir`、`extraReadable` 開放讀的 repo 不算，是故意的**：git 會照那個 repo 的 `.git/config` 執行指令，而 `git status` 在白名單裡、不問就跑。對話途中才建的巢狀 repo（例如在專案裡 `git clone`）：Git 2.46 以上本來就認得；舊的 Git 請重開 xj 或更新 Git |
+| 沙盒裡的 git 說 `detected dubious ownership` | Windows 的沙盒用另一個帳號跑，你的 repo 對它來說「擁有者是別人」，git 要列在 safe.directory 才肯用。xj 自己列：專案、專案裡**開沙盒時已經有的**巢狀 repo（submodule 這類）、可寫的範圍（包括加成也能改的資料夾）、工具鏈，和你自己在 `~/.gitconfig` 設的 `safe.directory`（單獨一個 `*` 除外）。**只開放讀的 repo（`/add-dir` 加成只能讀的、`extraReadable`）不算，是故意的**：git 會照那個 repo 的 `.git/config` 執行指令，而 `git status` 在白名單裡、不問就跑。對話途中才建的巢狀 repo（例如在專案裡 `git clone`）：Git 2.46 以上本來就認得；舊的 Git 請重開 xj 或更新 Git |
 | 開著沙盒的 xj 啟動要等好一陣子（Android 專案；Flutter 專案不會） | Flutter 專案不再開放 Flutter SDK、Pub cache、Android SDK、`~/.gradle`（flutter、dart 一律在沙盒外跑；那台的 Flutter 專案從 42～77 秒變成 5～13 秒）。以下是以前的情況，Android 專案照舊：Windows 的沙盒開放一個資料夾，要逐一改底下每個檔案的權限：Flutter SDK、Pub cache、Android SDK、`~/.gradle` 加起來常常有幾十萬個檔案（2026-10-27 實測：三十幾萬個，那台啟動要 45～55 秒；開機後第一次會更久。離開不用等，權限在背景收回）。畫面上會講在等什麼，每 10 秒講一次做到哪個資料夾。Android 專案的 Gradle 要讀 Android SDK：不要為了快一點把設定檔的 `sandbox.toolchainReadable` 清空，沙盒裡的 build 會失敗（flutter、dart 本來就一律在沙盒外跑，不用列進 `excludedCommands`）。不想等的話，可以用 `xj --no-sandbox` 開（沒有沙盒，每個指令都要問） |
 | 開著沙盒，白名單卻不生效、每個指令都問，而且說「寫得進沙盒外會被執行的地方」 | xj 開沙盒時會實際試寫 PATH 上的每個資料夾（還有沙盒讀得到的工具鏈、Git Bash 自己的資料夾、`excludedCommands` 的 SDK）：寫得進去的話，沙盒裡的指令就能在那裡放程式，之後在沙盒外以你的權限執行，所以白名單不生效（2026-10-27 加的）。常見原因是工具裝在 `C:\tools`、`D:\` 這種「所有登入的帳號都改得了」的地方。**PATH 上指到不存在的資料夾也算**（例如軟體移除了、PATH 那一筆還在）：沙盒在上層把它建出來、在裡面放程式就行 —— 最簡單的修法是把它從 PATH 拿掉；上層是磁碟的根目錄時，印的 icacls 只擋那一層建檔、建資料夾（`(WD,AD)`，不往下繼承）。要讓白名單回來：把那些工具改裝到 `Program Files`，或用系統管理員權限跑警告裡印的 `icacls "<資料夾>" /deny *<SID>:(OI)(CI)(WD,AD,WEA,WA,DC,DE)`（印的是往上連續寫得進去的最上層，例如 `C:\src`），再重開 xj。xj 會問你要不要直接幫你擋（用系統管理員權限，跳 UAC；可以永久允許），全部不問模式不問就擋，見 usage.md 的「全部不問模式」 |
 | 沙盒開著，`flutter`、`dart` 每次都問「在沙盒外跑」 | 正常：它們在沙盒裡跑不了（每次都要寫 SDK 的 `bin\cache`，沙盒裡會卡住），xj 直接告訴模型，由它要求在沙盒外跑那一個指令、每次問你。用 `xj --no-sandbox` 開（整個沒有沙盒）就不會問「在沙盒外跑」，但白名單也跟著不生效、每個指令都要問；在設定檔設 `"sandbox": { "excludedCommands": ["flutter", "dart"] }` 也一樣每次問。見 config.md「沙盒裡跑不了的工具」 |
@@ -54,32 +62,48 @@
 | 在 Git Bash 的視窗裡開 xj：說「要在終端機裡」，沒有全螢幕、狀態列 | Git Bash 自己的視窗（mintty）不是 Windows 的主控台：Git for Windows 預設不開虛擬主控台，xj（node）拿到的是管線、不是終端機（開場和 `xj doctor` 都會講）。請在 Windows Terminal、PowerShell 或 cmd 的視窗裡開 xj；Git Bash 也可以開在 Windows Terminal 裡（新分頁的選單裡的 Git Bash，Git 的安裝程式可以加） |
 | 在 MSYS2、Cygwin 的 mintty 裡（或開了虛擬主控台的 Git Bash 視窗），有 emoji、「…」這類字的那一行，全螢幕右邊那一欄對不齊 | 中間多一層 Windows 的虛擬主控台（ConPTY）：xj 開場量到的是那一層算的寬度，mintty 實際畫的不一樣，xj 量不到。內容都在，只是右邊那一欄往左或往右跑。要對齊的話在 Windows Terminal 裡開 xj，或用 `/tui classic` 換成一般模式 |
 | 找不到 Git Bash | 裝 Git for Windows，或在設定檔寫 `"windows": { "gitBash": "C:\\…\\bin\\bash.exe" }`。`C:\Windows\System32\bash.exe` 是 WSL 的啟動程式，不是 Git Bash，xj 不會用它 |
-| 從 Microsoft Store 裝了 PowerShell 7，xj 卻用內建的 5.1（設定檔指定它的話說「不能用」） | 0.1.3 和以前的版本認不得 Store 的 7：它在 PATH 上是「應用程式執行別名」（`%LOCALAPPDATA%\Microsoft\WindowsApps\pwsh.exe`），xj 以為它不存在。0.1.4 起沒開沙盒時用它；開著沙盒時照樣跳過（沙盒的帳號跑不了裝在你帳號底下的程式），用 Program Files 的 7 或內建的 5.1，`xj doctor` 會講。要在沙盒裡用 7，請裝官方的 MSI（裝到 `C:\Program Files\PowerShell\7`） |
+| 從 Microsoft Store 裝了 PowerShell 7，xj 卻用內建的 5.1（設定檔指定它的話說「不能用」） | 0.1.3 和以前的版本認不得 Store 的 7：它在 PATH 上是「應用程式執行別名」（`%LOCALAPPDATA%\Microsoft\WindowsApps\pwsh.exe`），xj 以為它不存在。0.1.4 起沒開沙盒時用它；開著沙盒時照樣跳過（沙盒的帳號跑不了裝在你帳號底下的程式），用 Program Files 的 7 或內建的 5.1，`xj doctor` 會講。開場沒有沙盒、之後用 `/sandbox on` 打開的話，這次對話改用沙盒跑得了的那一個（會講）。要在沙盒裡用 7，請裝官方的 MSI（裝到 `C:\Program Files\PowerShell\7`） |
 | 沙盒裡跑 node 的腳本（`npm test`、`node --test`、`node 檔案.js`）出現 `EPERM: operation not permitted, lstat 'C:\Users\<你>\Desktop'` | Node 找腳本的實際路徑時，要讀每一層上層資料夾的屬性。xj 開沙盒時會替家目錄裡的那幾層加「只能讀屬性」的權限（見下面「不一樣的地方」），正常就不會這樣。還是出現的話，看開場有沒有「上層資料夾加不上權限」的提醒（例如公司的電腦擋了 PowerShell）：這時這類指令改在沙盒外跑（設定檔的 `sandbox.excludedCommands` 加 `npm`、`node`，每次都先問你） |
 | 沙盒裡的 PowerShell 印出 `Project:\src\…` 這種路徑 | 沙盒的帳號讀不到你家目錄這些上層的資料夾，PowerShell 自己進不了工作目錄（會停在 `C:\`），所以 xj 開一個指到工作目錄的 `Project:` 磁碟機讓它進去。`Project:\src\a.ts` 就是專案裡的 `src\a.ts` |
 | PowerShell 的指令（不是 `Get-Content` 這種）每個都問 | PowerShell 的白名單只認很單純的寫法：唯讀的 cmdlet（`Get-ChildItem`、`Get-Content`、`Select-String`、`Select-Object`…），參數是一般的字或單引號，沒有 `$`、括號、雙引號、`>`。問你的時候會講是哪裡不算（例如「有 $（變數、子運算式）」）。其他的指令請讓它用 bash（Git Bash） |
 | `xj update` 說下次開就是新版，開起來還是舊版（開場、`xj doctor` 說「上次的 xj update 沒換成」） | 新版先解在 `%LOCALAPPDATA%\Programs\xj.update`，xj 結束之後由背景把資料夾改名換上：那時資料夾被開著就換不成（例如某個視窗 `cd` 在 xj 的資料夾裡、開著裡面的檔案），原因寫在 `%LOCALAPPDATA%\Programs\xj-update.log`。關掉別的 xj 視窗、離開那個資料夾，再打一次 `xj update`（0.1.3 起在 xj 的資料夾裡打的話，它會先停下來叫你換資料夾；開場、`xj doctor` 的這句也是 0.1.3 起才有） |
 | 在 cmd 裡用 `xj -p` 時按了 Ctrl-C，xj 結束後 cmd 問「要終止批次工作嗎 (Y/N)?」 | 那是 cmd.exe 自己問的（xj.cmd 是批次檔），回答 Y 或 N 都一樣。對話（不加 `-p`）裡的 Ctrl-C 是 xj 自己處理的按鍵，不會這樣；用 PowerShell 跑 `xj -p` 也不會 |
-| MCP server 說「Windows 的沙盒現在不能跑 MCP server」 | Windows 的沙盒還沒辦法把 stdin 接給沙盒裡的程式，而 MCP（stdio）靠的就是 stdin。要用的話在設定檔把那個 server 的 `sandbox` 設成 `false`：它會以你的權限在沙盒外跑，每次呼叫照樣先問你（除非列在 `autoApprove`）。只給你信任的 server 這樣設 |
+| MCP server 說「Windows 的沙盒現在不能跑 MCP server」 | Windows 的沙盒還沒辦法把 stdin 接給沙盒裡的程式，而 MCP（stdio）靠的就是 stdin。要用的話在設定檔把那個 server 的 `sandbox` 設成 `false`：它會以你的權限在沙盒外跑，每次呼叫照樣先問你（除非列在 `autoApprove`，或是全部不問模式）。只給你信任的 server 這樣設 |
 | 擔心在別人的 repo 裡打 `xj` 會跑到 repo 裡的同名程式 | xj.cmd 自己找 node 時不找目前的資料夾，也不用工作目錄底下的 node（PATH 上經過 junction 指進工作目錄的認不出來：批次檔沒辦法查實際路徑，Git Bash 用的 sh 啟動器認得）。但「找 xj.cmd 本身」是 cmd.exe 的事：cmd 會先找目前的資料夾，所以 repo 裡放一個 `xj.cmd` 就會被執行。建議用 PowerShell（它不找目前的資料夾），或在系統的環境變數設 `NoDefaultCurrentDirectoryInExePath=1` |
 | 啟動時說「xj: NODE_OPTIONS is ignored …」（xj.cmd 只印英文） | Windows 的 xj.cmd 整個不採用 NODE_OPTIONS（批次檔拆不了引號，沒辦法只留安全的那幾個）；裡面有 `--use-system-ca`、`--use-openssl-ca` 的話會直接傳給 node |
 | 中文的輸出變亂碼 | PowerShell 工具的輸出、`Get-Content`／`Set-Content`／`Out-File`／`>` 讀寫檔，xj 都已經改成 UTF-8（Windows 內建的 PowerShell 5.1 寫出來的檔案會帶 BOM，所以建檔、改檔請讓它用 write、edit 工具）。Git Bash 裡跑 Windows 內建的程式（`ipconfig`、`cmd //c dir`）照主控台的字碼頁輸出：xj 一行一行判斷，不是 UTF-8 的那幾行照系統的字碼頁讀（繁體中文的 Windows 是 Big5）。還是亂碼的話，多半是那個程式自己換了字碼頁（例如先跑過 `chcp`） |
 | xj doctor 的「程序收尾」說 job object 不能用 | xj 用 Windows 內建的 PowerShell 5.1 在背景管理 job object（Ctrl-C、逾時時收掉指令開的每個程序）。公司的電腦把 PowerShell 或 Add-Type 擋掉的話就用不了：這時 Ctrl-C 可能收不乾淨 Git Bash 開的背景程序，xj 結束時看門狗會再收一次 |
-| 指令開的程式（視窗程式、`start` 開的、Gradle daemon）指令一結束就不見了 | xj 把每個指令開的程式都放進同一個 job object，指令結束時整個收掉（Git Bash 開的背景程序才收得乾淨；開著沙盒時是沙盒自己的 job object，一樣會收），比 macOS、Linux 嚴。要留著用的程式（開發伺服器、模擬器、編輯器）請在 xj 外面自己開。Gradle 的 daemon 每次 build 會重開一個（每次多等幾秒，結果不受影響） |
+| 指令開的程式（視窗程式、`start` 開的、Gradle daemon）指令一結束就不見了 | xj 把每個指令開的程式都放進同一個 job object，指令結束時整個收掉（Git Bash 開的背景程序才收得乾淨；開著沙盒時是沙盒自己的 job object，一樣會收），比 macOS、Linux 嚴。要留著用的開發伺服器叫模型放到背景跑（`/jobs` 看得到、停得掉；見 usage.md 的「指令的時間上限、背景跑」），模擬器、編輯器這類請在 xj 外面自己開。Gradle 的 daemon 每次 build 會重開一個（每次多等幾秒，結果不受影響） |
 | Git Bash 的指令找不到 `~/.gitconfig`、`~/.ssh`（網域帳號、家目錄在網路磁碟上） | 沒有沙盒時 xj 直接跑 Git 的 `usr\bin\bash.exe`，沒有 HOME 的話照 Git Bash 的規則補：`HOMEDRIVE`＋`HOMEPATH` 是存在的資料夾就用它，不然用 `USERPROFILE`。要固定用某個資料夾，在 Windows 的使用者環境變數設 `HOME` |
 
 **Windows 的沙盒跟 macOS、Linux 不一樣的地方**（alpha）：
 
-- 機密檔是在沙盒啟動時一個一個寫進權限（ACL）的。之後才出現的機密檔，xj 每個指令執行前會另外擋。
+- 機密檔是在沙盒啟動時一個一個寫進權限（ACL）的。之後才出現的機密檔，xj 每個指令執行前會另外擋
+  （背景的指令跑著的時候才出現的，要到下一個指令之前才擋得到：這之前那個背景的指令讀得到它）。
   專案很大（超過約兩萬個檔案，不含 node_modules 這類）時找不完，沒找到的沙盒擋不到：這時白名單不生效、每個指令都問，開場和 `xj doctor` 會講。
 - 還不存在的受保護檔案（例如 `.vscode/tasks.json`、`.git/hooks/` 底下的新檔），沙盒擋不到「建立」：
   xj 的工具和重新導向照樣擋，指令建了的話會在結果裡提醒你檢查。
-- `/add-dir` 之後沙盒要重新啟動（Windows 的權限只能這樣換），開著的 MCP server 也會重開。
+- 受保護的檔案所在的資料夾（例如 `.git`、工作目錄本身）開著沙盒的時候多兩條「不能刪除」的權限（`srt-sandbox` 帳號、`sandbox-runtime-users` 群組各一條，
+  只有那一層，裡面的檔案照樣改得了）：沒有它的話，沙盒裡的指令可以把整個 `.git` 改名、換成一個新的 `.git/config`、`.git/hooks`。
+  srt-win 改權限時（另一個 xj 做的也算）會拿掉帳號那一條，群組那一條它不碰。xj 結束時兩條一起拿掉；加不上的話白名單不生效、每個指令都問；
+  沙盒的群組不在、或 `srt-sandbox` 不在這個群組裡的話也一樣（用系統管理員權限再跑一次 `srt windows-install`）。
+- `/add-dir`、開 xj 時一起加的資料夾：下一個指令之前先擋那裡的機密檔、受保護的檔案，再給那個資料夾的權限（只做新加的那個）；
+  拿掉資料夾（`/add-dir remove`、換對話）時沙盒要整個重新準備（Windows 的權限只能整批收回），開著的 MCP server 也會重開（加資料夾不會）。
+- 沙盒要重新擋檔案的時候，裡面不能有東西在跑：機密檔被換成另一個檔案（編輯器另存再改名、刪掉重建）、拿掉了資料夾、加了也能改的資料夾、
+  一次多出很多機密檔、也能改的資料夾本身（`/add-dir` 加的，不是工作目錄）多了新的機密檔之後，背景還有指令在跑（`/jobs`）的話，下一個指令不會跑，
+  xj 講要先停掉哪幾個：停掉（`/jobs stop <編號>`，模型用 `job_stop`）再跑一次就好。只多加能讀的資料夾、別的地方多了新的機密檔不受影響。
+  原因：重新擋要先整批放掉再擋回去，這中間還在跑的指令讀得到機密檔、改得到受保護的檔案；補擋新的機密檔時 srt-win 會暫時拿掉那一層擋改名的帳號那一條，
+  也能改的資料夾本身只靠它（群組那一條在那一層會被 srt-win 排到允許的後面）。
+  被換過的那個機密檔要等重新擋了才擋得到：在那之前，還在跑的背景指令讀得到它，要緊的話馬上停掉它們。
 - 工作目錄（和開放的工具鏈，例如 npm 的全域安裝）在家目錄底下時，上面每一層資料夾（例如 `Desktop`、`AppData`）開著沙盒的時候多一條
   「`srt-sandbox`：只能讀屬性」的權限（沒有它，沙盒裡的 node 腳本會 EPERM）。沙盒看得到的只有那幾層資料夾本身的時間、隱藏這些屬性，
   列不出裡面有什麼、讀不到檔案。xj 結束時在背景拿掉；同時開著好幾個 xj 的話，最後一個結束才拿；xj 被強制結束的話，下一次開沙盒時收掉。
 - 所有 xj 的沙盒都用同一個 `srt-sandbox` 帳號：同時開著兩個 xj 的話，一個開放給它的資料夾（專案、工具鏈），
   另一個的沙盒裡也讀得到（可寫的那幾個，例如專案，也寫得進去），直到前一個結束、權限收回；機密檔照樣擋（開沙盒時先擋機密檔）。
+  例外是上一條講的「重新擋」的那一下：另一個 xj 的沙盒裡剛好在跑的指令，這時候讀得到機密檔、改得到受保護的檔案。xj 只管得到它自己的背景指令。
+  受保護的檔案所在的資料夾改名擋得住（「不能刪除」群組那一條 srt-win 不碰、開放資料夾之前就加；工作目錄本身 xj 開著時誰都改不了名），
+  除了也能改的 `/add-dir` 資料夾本身：另一個 xj 動到它（重新準備、關掉沙盒）之後，到這個 xj 下一次重新擋之前擋不住它改名
+  （要它的上一層是誰都建得了資料夾的地方才改得了，例如 `C:\` 底下自己建的資料夾、資料磁碟）。
   不要一邊開著可信的專案、一邊在不可信的專案裡開 xj。
 - 沙盒啟動時要替整個專案和開放的工具鏈設權限：檔案多的話（node_modules、Flutter／Android 的工具鏈）要等一陣子，畫面上會講在等什麼。
   結束時權限交給背景的程式收回，xj 不用等；收完之前，沙盒的帳號還留著那些權限（大的工具鏈要半分鐘以上）。

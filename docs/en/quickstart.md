@@ -22,8 +22,8 @@ To keep several keys for one provider apart, see "Several keys for one provider"
 xj setup
 ```
 
-It asks, in order: which provider (1 Anthropic, 2 OpenAI, 3 Gemini, 4 a local or other OpenAI-compatible service: choice 4 lists Ollama and the local servers found on this computer, with a last item for entering an address, then asks for a name and whether it needs a key), the key, whether to add another key, the default model, the language for AI replies, and whether to beep (it does not ask about the budget; change that in the config file). The key is stored without appearing on screen or in your command history:
-on macOS the `security` command asks you to paste it into the keychain; on Windows it goes into Credential Manager; elsewhere into a key file only you can read. At the end it runs `xj doctor` for you.
+It asks, in order: which provider (1 Anthropic, 2 OpenAI, 3 Gemini, 4 a local or other OpenAI-compatible service: choice 4 lists Ollama and the local servers found on this computer, with a last item for entering an address, then asks for a name and whether it needs a key), the key, whether to add another key, the default model, the language for AI replies, and whether to beep (it does not ask about the budget: by default $5 per turn, $30 per day and $100 per month, and at a limit xj stops and asks you; to change it, type `/budget` in xj). The key is stored without appearing on screen or in your command history:
+on macOS the `security` command asks you to paste it into the keychain (it asks for "password data for new item:", which is macOS's own wording: paste the API key, and paste it again when it asks a second time); on Windows it goes into Credential Manager; elsewhere into a key file only you can read. At the end it runs `xj doctor` for you.
 
 The first time you type `xj`, it asks for the interface language, shows a notice, and runs the setup wizard after you accept.
 
@@ -37,9 +37,11 @@ xj
 - The first time you start it in a folder, it asks "Trust this folder?". Only in folders you trust do whitelisted commands (tests, `git status`) run directly, and AGENTS.md and the project's skills get loaded. Answer no for someone else's repo at first.
 - Type a request, for example "change the second line of the README to …". It reads the file first, then shows the diff and asks "Apply?"; nothing changes until you press `y` (once you have seen the whole diff, Enter counts as yes too).
 - If it got something wrong, type `/undo` to restore; `/help` lists all commands.
+- By default the sandbox is on and the mode is normal: commands are confined in the sandbox, edits ask, whitelisted commands run directly and the rest ask. For fewer questions, letting it run on its own, or using Docker, see [setup-guide.md](setup-guide.md) (how each mode behaves: "Sandbox and modes" in [usage.md](usage.md)).
 - To switch platforms or models, type `/model`: pick a platform, then a model. Local servers on this computer (Ollama, LM Studio…) are found for you, and if a key is missing you paste it right there (only • appears on screen);
   the choice is remembered, so the next xj starts with it too (see "Switching platforms and models" in [usage.md](usage.md)).
 - To switch the interface between English and Chinese, use `/language ui en` or `/language ui zh-TW`.
+- To change settings, type `/config`, or just ask it "this project needs docker, what should I set?" (it can propose changes, written to the config only if you approve; see "Changing settings" in [usage.md](usage.md)).
 
 ## 4. Updating later
 

@@ -10,8 +10,11 @@ xj 要你核准的時候用 MCP 的 elicitation 問，橋接把問題變成按�
 
 - 先在終端機開一次 `xj`，同意使用提醒、設好金鑰。
 - 要讓 xj 做事的資料夾，要先在電腦前面用 `xj` 開一次、選信任。**透過 MCP 不能信任新的資料夾**。
-- 沙盒一定要開著，而且要整個擋得住（`xj doctor` 的「OS 沙盒」那一列；Windows 上「擋不全」的時候也不行）。沒有沙盒的話 `xj_task` 一律拒絕；`--no-sandbox`、全部不問、`--auto` 在這裡都不能用。
+- 沙盒一定要開著，而且要整個擋得住（`xj doctor` 的「OS 沙盒」那一列；Windows 上「擋不全」的時候也不行）。沒有沙盒的話 `xj_task` 一律拒絕；
+  設定檔寫了 `"sandbox": { "enabled": false }` 也照樣開沙盒（沙盒起不來的機器上就用不了 `xj mcp`），`--no-sandbox`、全部不問、`--auto` 在這裡都不能用。
 - 改了設定檔的 `mcpServer` 要重開 MCP client：`xj mcp` 只在啟動時讀設定；設定改過之後它不接新的事，叫你重開（放寬、收緊都一樣）。
+- 跟在終端機裡用的不一樣：不收 `--add-dir`，也不加設定檔的 `permissions.addDirs`（碰得到的資料夾照下面的 `mcpServer.projects`）；
+  不能放到背景跑（指令最長跑到設定檔的 `commands.maxTimeoutSec`，預設 10 分鐘）；模型不能提議改設定（`settings_propose`），也沒有內建的 `xj-settings` 技能（你的設定不給叫 xj 的程式看）。
 
 ## 接到 client
 

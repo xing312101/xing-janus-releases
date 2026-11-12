@@ -56,7 +56,7 @@ npm install -g --ignore-scripts @anthropic-ai/sandbox-runtime@0.0.79
 - 裝在沙盒寫得到的地方（專案資料夾、暫存區）的那一份不會用：沙盒裡的指令換得掉它。
 - `xj doctor` 會印出用的是哪一份。找不到或版本不對時，沙盒那一列會直接給出要跑的指令；
   xj 更新後如果要換版本，也是照那一行重裝。
-- 不裝的話沙盒起不來，xj 會拒絕跑任何指令。要不經過沙盒跑，啟動時加 `--no-sandbox`（每個指令都會先問你）。
+- 不裝的話沙盒起不來，xj 會拒絕跑任何指令。要不經過沙盒跑，啟動時加 `--no-sandbox`，或設定檔寫 `"sandbox": { "enabled": false }`（每個指令都會先問你）。
 
 ## 安裝
 
@@ -68,7 +68,11 @@ brew trust --formula xing312101/xing-janus/xj
 brew install xj
 ```
 
-Homebrew 預設不載入第三方 tap 的 formula，`brew trust` 只信任 xj 這一個（不是整個 tap）。Node 和 ripgrep 會一起裝好。xj 自己一律用 brew 裝的 node 跑（nvm 切到哪一版都不影響），你專案裡的指令照舊用 PATH 上的 node。
+Homebrew 預設不載入第三方 tap 的 formula，`brew trust` 只信任 xj 這一個（不是整個 tap）。Node 和 ripgrep 會一起裝好。
+Homebrew 的 node 會再帶二十幾個它自己的依賴（openssl、icu4c、sqlite 這類；都是編好的，不用編譯）。其中有你之前裝過、但版本舊了的，`brew install xj` 會先把它們升級，
+再把用到它們的其他套件一起升級，所以可能一次升級十幾個套件：這是 Homebrew 的規矩，要 node 的 formula 都一樣。不想連帶升級別的套件的話，
+用 `HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1 brew install xj`（只升級 xj 要的那些；Homebrew 提醒這樣其他套件之後可能出現連結壞掉的情況），
+或照下面的「手動安裝」，用你自己的 Node。xj 自己一律用 brew 裝的 node 跑（nvm 切到哪一版都不影響），你專案裡的指令照舊用 PATH 上的 node。
 formula 由 tap 自己的 workflow 照這個發佈頁面最新的版本更新：更新之前先用公鑰驗過簽章（brew 本身只核對 SHA-256），
 下載的檔案 brew 會照 formula 核對 SHA-256。想自己再驗一次的話，照下面手動安裝的第 2 步。裝好之後跑 `xj doctor`。
 
